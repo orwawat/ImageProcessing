@@ -14,60 +14,22 @@ class RgbYiqConverter:
         redPic = rgbImg[:, :, 0].ravel()
         greenPic = rgbImg[:, :, 1].ravel()
         bluePic = rgbImg[:, :, 2].ravel()
-
         imgToConvert = np.row_stack((redPic, greenPic, bluePic))
-
-        '''
-        print("********************************")
-        print("imgToConvert YIQ pic: \n")
-        print(imgToConvert)
-
-        print("\n\n")
-        print("********************************")
-        '''
-
         yiq = np.dot(RgbYiqConverter.yiqToRgb, imgToConvert)
         yiq = yiq.T
-        print("\n\n")
-        print("********************************")
-
-        print(yiq.shape)
-        '''
-        print("********************************")
-        print("before reshape: \n")
-        print(yiq)
-        print("\n\n")
-        print("********************************")
-        '''
         yiq = yiq.reshape((rgbImg.shape[0], rgbImg.shape[1], rgbImg.shape[2]))
-
         return yiq.astype(np.float32)
-
-        '''
-        redY = rgbImg[:,:,0].dot(0.299)
-        blueY = rgbImg[:, :, 0].dot(0.587)
-        greenY = rgbImg[:, :, 0].dot(0.114)
-        Y = redY + blueY + greenY
-
-        redI = rgbImg[:, :, 0].dot(0.596)
-        blueI = rgbImg[:, :, 0].dot(-0.275)
-        greenI = rgbImg[:, :, 0].dot(-0.321)
-        I = redI + blueI + greenI
-
-        redQ = rgbImg[:, :, 0].dot(0.299)
-        blueQ = rgbImg[:, :, 0].dot(0.587)
-        greenQ = rgbImg[:, :, 0].dot(0.114)
-        Q = redQ + blueQ + greenQ
-
-        if (Y == yiq[0, :, :] and I == yiq[:, 0, :] and Q == yiq[:, :, 0]):
-            return 1
-        else:
-            return 0
-        '''
 
     @staticmethod
     def getRGB(yiqImg):
-        return np.linalg.inv(RgbYiqConverter.yiqToRgb).dot(yiqImg)
+        yPic = yiqImg[:, :, 0].ravel()
+        iPic = yiqImg[:, :, 1].ravel()
+        qPic = yiqImg[:, :, 2].ravel()
+        imgToConvert = np.row_stack((yPic, iPic, qPic))
+        rgb = np.dot(np.linalg.inv(RgbYiqConverter.yiqToRgb), imgToConvert)
+        rgb = rgb.T
+        rgb = rgb.reshape((yiqImg.shape[0], yiqImg.shape[1], yiqImg.shape[2]))
+        return rgb.astype(np.float32)
 
 def read_image(filename, representation):
     im = imread(filename)
@@ -101,16 +63,21 @@ def yiq2rgb(imYIQ):
 
 
 myPic = read_image('color.jpg', 2)
-myPic = myPic[0:2,0:2,:].round(3)
+myPic = myPic#[0:2,0:2,:].round(3)
 #print("myPic is: \n")
 #print(myPic)
 #print("\n\n")
 
 yiqPic = rgb2yiq(myPic)
+print("first pic some pixel value: ", myPic[95, 60, :], "\n\n")
+print("yiq pic some pixel value: ", yiqPic[95, 60, :], "\n\n")
+rgb = yiq2rgb(yiqPic)
+print("rgb pic some pixel value: ", rgb[95, 60, :], "\n\n")
 #print("********************************")
 #print("myPic YIQ pic: \n")
 #print(yiqPic)
-print("\n\n")
-plt.imshow(yiqPic)
+
+plt.imshow(rgb)
+#plt.imshow(yiqPic[:, :, 0], plt.cm.gray)
 plt.show()
-#imdisplay('color.jpg', 2)
+#imdisplay('color.jpg', 1)
