@@ -38,7 +38,7 @@ class RgbYiqConverter:
 
 
 def isGraySacle(im):
-    return len(im.shape) >= 3
+    return len(im.shape) < 3
 
 def getGrayImage(im_float):
     '''
@@ -134,32 +134,37 @@ def histogram_equalize1(im_orig):
     return [im_eq, hist_orig, hist_eq]
 
 
-def histogram_qualize(im_orig):
+def histogram_equalize(im_orig):
     if not isGraySacle(im_orig):
-        im = yiq2rgb(im_orig)[:, :, 0]
+        im = rgb2yiq(im_orig)[:, :, 0]
     else:
         im = im_orig
 
-    im = im * 256
+    im = (im * 255).astype(np.int)
     hist_orig, bin_edges = np.histogram(im, bins=256, range=(0, 256))
     sumHist = np.cumsum(hist_orig, dtype=np.float32)
 
-    m = 0
-    while sumHist.item(m) != 0:
-        m += 1
+    lut = sumHist / (im.shape[0] * im.shape[1]) * 255
 
-    lut = np.ndarray(shape=(256))
+    minGray = sumHist.item(np.nonzero(sumHist)[0][0])
 
-    for i in range(0,256):
-        lut.setitem(i, np.round(255 * (sumHist.item(i) - sumHist(m)) / (sumHist.item(255) - sumHist(m))))
+    # Starch the look up table
+    lut = np.round(255 * (sumHist - minGray) / (sumHist.item(255) - minGray))
+
+    lut = lut.astype(np.int)
 
     im_eq = lut[im]
+
+    hist_eq, bin_edges = np.histogram(im_eq, bins=256, range=(0, 256))
     return [im_eq, hist_orig, hist_eq]
 
-myPic = read_image('bw.jpg', 1)
+myPic = read_image('bw.jpg', 2)
 #myPic = myPic[0:2,0:2,:].round(3)
 myPic, hist_orig, hist_eq = histogram_equalize(myPic)
-arrdisplay(myPic, 1)
+# arrdisplay(myPic, 1)
+
+plt.bar(hist_orig, 'b', hist_eq, 'r')
+plt.show()
 #print("myPic is: \n")
 #print(myPic)
 #print("\n\n")
