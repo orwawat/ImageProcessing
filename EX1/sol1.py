@@ -11,9 +11,11 @@ class RgbYiqConverter:
 
     @staticmethod
     def getYIQ(rgbImg):
+        # Convert to 3 row vector's
         redPic = rgbImg[:, :, 0].ravel()
         greenPic = rgbImg[:, :, 1].ravel()
         bluePic = rgbImg[:, :, 2].ravel()
+        # Convert to 3*1 matrix
         imgToConvert = np.row_stack((redPic, greenPic, bluePic))
         yiq = np.dot(RgbYiqConverter.yiqToRgb, imgToConvert)
         yiq = yiq.T
@@ -22,29 +24,50 @@ class RgbYiqConverter:
 
     @staticmethod
     def getRGB(yiqImg):
+        # Convert to 3 row vector's
         yPic = yiqImg[:, :, 0].ravel()
         iPic = yiqImg[:, :, 1].ravel()
         qPic = yiqImg[:, :, 2].ravel()
+        # Convert to 3*1 matrix
         imgToConvert = np.row_stack((yPic, iPic, qPic))
         rgb = np.dot(np.linalg.inv(RgbYiqConverter.yiqToRgb), imgToConvert)
         rgb = rgb.T
         rgb = rgb.reshape((yiqImg.shape[0], yiqImg.shape[1], yiqImg.shape[2]))
         return rgb.astype(np.float32)
 
+
+def isGraySacle(im):
+    return len(im.shape) >= 3
+
+def getGrayImage(im_float):
+    '''
+    :param im_float: image astype=np.float32, values are in [0,1]
+    :return:
+    '''
+    if isGraySacle(im_float):
+        # Convert to gray scale
+        im_gray = color.rgb2gray(im_float)
+        im_gray = im_gray.astype(np.float32)
+        grayImage = im_gray
+    else:
+        # Already gray, no need to convert
+        grayImage = im_float
+
+    return grayImage
+
 def read_image(filename, representation):
     im = imread(filename)
+    # tokenize
     im_float = im.astype(np.float32)
     im_float /= 255
 
-    if len(im.shape) >= 3 and representation == 1:
-        im_gray = color.rgb2gray(im_float)
-        im_gray = im_gray.astype(np.float32)
-        returnImage = im_gray
+    if representation == 1:
+        # Convert to gray
+        getGrayImage(im_float)
     else:
         returnImage = im_float
 
     return returnImage
-
 
 def imdisplay(filename, representation):
     if representation == 1:
@@ -53,7 +76,6 @@ def imdisplay(filename, representation):
         plt.imshow(read_image(filename, representation))
     plt.show()
 
-
 def rgb2yiq(imRGB):
     return RgbYiqConverter.getYIQ(imRGB)
 
@@ -61,7 +83,30 @@ def yiq2rgb(imYIQ):
     return RgbYiqConverter.getRGB(imYIQ)
 
 
+def histogram_equalize(im_orig):
+    ''' Algorithm:
+    1. Given image I(x,y), create a histogram 
+    H:
+    • For all x,y:  H(I(x,y)) = H(I(x,y)) + 1
+    2. Create cumulative histogram S(k):
+    • S(0) = H(0);  S(k+1) = S(k) + H(k+1); 
+    • Let m be first grey level for which S(m)≠0;
+    3. Create Look Up Table (LUT) T(k):
+    • T(k) = round{255 × [S(k)‐S(m)] / [S(255)‐S(m)] }
+    4. Apply LUT 
+    T to image I, get equalized image 
+    J
+    • J(x,y) = T (I(x,y))
+    '''
 
+    if not isGraySacle(im_orig):
+        im = yiq2rgb(im_orig)[:, :, 0]
+    else:
+        im = im_orig
+
+    H = im.histogram()
+
+    return [im_eq, hist_orig, hist_eq]
 myPic = read_image('color.jpg', 2)
 myPic = myPic#[0:2,0:2,:].round(3)
 #print("myPic is: \n")
