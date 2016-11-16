@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from skimage import data, io, filters, color
 
 
+MAX_COLOR = 255
 class RgbYiqConverter:
     yiqToRgb = np.array([[0.299, 0.587, 0.114],
                         [0.596, -0.275, -0.321],
@@ -60,7 +61,7 @@ def read_image(filename, representation):
     im = imread(filename)
     # tokenize
     im_float = im.astype(np.float32)
-    im_float /= 255
+    im_float /= MAX_COLOR
 
     if representation == 1:
         # Convert to gray
@@ -87,69 +88,25 @@ def rgb2yiq(imRGB):
 def yiq2rgb(imYIQ):
     return RgbYiqConverter.getRGB(imYIQ)
 
+def getYiqImage(im):
+    if not isGraySacle(im):
+        im = rgb2yiq(im)[:, :, 0]
 
-def histogram_equalize1(im_orig):
-
-    if not isGraySacle(im_orig):
-        im = yiq2rgb(im_orig)[:, :, 0]
-    else:
-        im = im_orig
-
-    im = im * 256
-    hist_orig, bin_edges = np.histogram(im, bins=256, range=(0, 256))
-    # print("histogram is: ", hist_orig)
-    # print("\n\n****************************\n\n")
-    sumHist = np.cumsum(hist_orig, dtype=np.float32)
-    # print("sumHist is: ", sumHist)
-    # print("\n\n****************************\n\n")
-
-    minGray = sumHist.item(np.nonzero(sumHist)[-1][-1])
-    print(minGray)
-
-    cdf_m = np.ma.masked_equal(sumHist, 0)
-    cdf_m = (cdf_m - cdf_m.min()) * 255 / (255 - cdf_m.min())
-    lut = np.ma.filled(cdf_m, 0).astype('uint8')
-
-    '''
-    lut = np.ndarray(shape=(256))
-
-    # print(sumHist[minGray])
-
-    lut = np.round(255 * (sumHist - minGray) / sumHist.item(255) - minGray)
-
-    for i in range(0, 256):
-        print(np.round(255 * (sumHist[i] - sumHist[minGray]) / sumHist[255] - sumHist[minGray]))
-        lut.itemset(i, np.round(255 * (sumHist[i] - sumHist[minGray]) / sumHist[255] - sumHist[minGray]))
-        '''
-
-    print(lut)
-    im_eq = lut[im]
-
-    hist_eq = np.histogram(im_eq, bins=256, range=(0,256))
-    if not isGraySacle(im_orig):
-        im_eq = yiq2rgb(im_eq)
-
-    #print("The sum histogram is: ", sumHist)
-
-    return [im_eq, hist_orig, hist_eq]
-
+    return im
 
 def histogram_equalize(im_orig):
-    if not isGraySacle(im_orig):
-        im = rgb2yiq(im_orig)[:, :, 0]
-    else:
-        im = im_orig
+    im = getYiqImage(im_orig)
 
-    im = (im * 255).astype(np.int)
+    im = (im * MAX_COLOR).astype(np.int)
     hist_orig, bin_edges = np.histogram(im, bins=256, range=(0, 256))
     sumHist = np.cumsum(hist_orig, dtype=np.float32)
 
-    lut = sumHist / (im.shape[0] * im.shape[1]) * 255
+    lut = sumHist / (im.shape[0] * im.shape[1]) * MAX_COLOR
 
     minGray = sumHist.item(np.nonzero(sumHist)[0][0])
 
     # Starch the look up table
-    lut = np.round(255 * (sumHist - minGray) / (sumHist.item(255) - minGray))
+    lut = np.round(MAX_COLOR * (sumHist - minGray) / (sumHist.item(MAX_COLOR) - minGray))
 
     lut = lut.astype(np.int)
 
@@ -158,13 +115,61 @@ def histogram_equalize(im_orig):
     hist_eq, bin_edges = np.histogram(im_eq, bins=256, range=(0, 256))
     return [im_eq, hist_orig, hist_eq]
 
+
+def findBorders(intensities, n_quant):
+    borders = np.ndarray(shape=n_quant + 1)
+    borders.itemset(0,0)
+    borders.itemset(n_quant + 1, MAX_COLOR)
+
+    for i in range(0,n_quant - 1):
+        borders.itemset(i + 1, (intensities.item(i) + intensities.item(i + 1)) / 2)
+
+def findIntesities(borders, histogram, n_quant):
+    intensities = np.ndarray(shape=n_quant)
+    for i in range(0,n_quant):
+        numerator, denominator = 0
+        for k in range(borders.item(i), borders.item(i + 1)):
+            numerator += k * histogram.item(k)
+            denominator += histogram.item(k)
+        intensities.itemset(i, numerator / denominator)
+
+def calcSSD(intensities, borders, histogram):
+    error = 0
+    for intens in intensities:
+        for xIndex in range(borders[intens], borders[intens + 1]):
+            error += np.power((intens - xIndex), 2) * histogram(xIndex)
+
+    return error
+
+
+def quantize (im_orig, n_quant, n_iter):
+    error = np.zeros(n_quant)
+    im = getYiqImage(im_orig)
+    histogram = np.histogram(im, bins=MAX_COLOR + 1, range=(0, MAX_COLOR + 1))
+
+    segBorders = np.linspace(0, MAX_COLOR, num=(n_quant + 1), endpoint=True, retstep=False, dtype=np.int)
+    segIntensities = findIntesities(segBorders)
+    i = 0
+    convergence = False
+    while i < n_iter or convergence:
+        error.itemset(i, calcSSD(segIntensities, segBorders, histogram))
+        segBorders = findBorders(segIntensities, n_quant)
+        segIntensities = findIntesities(segBorders, histogram, n_quant)
+        if i > 0:
+            convergence = error.item(i) >= error.item(i - 1)
+
+    for i in range(0,n_quant):
+        im_quant = segIntensities[im[segBorders.item(i) : segBorders.item(i+1), :]]
+
+    return [im_quant, error]
+
 myPic = read_image('bw.jpg', 2)
 #myPic = myPic[0:2,0:2,:].round(3)
 myPic, hist_orig, hist_eq = histogram_equalize(myPic)
 # arrdisplay(myPic, 1)
 
-plt.bar(hist_orig, 'b', hist_eq, 'r')
-plt.show()
+# plt.bar(hist_orig, 'b', hist_eq, 'r')
+# plt.show()
 #print("myPic is: \n")
 #print(myPic)
 #print("\n\n")
@@ -182,3 +187,4 @@ plt.show()
 #plt.imshow(yiqPic[:, :, 0], plt.cm.gray)
 
 #imdisplay('color.jpg', 1)
+
