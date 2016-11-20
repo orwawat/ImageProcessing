@@ -34,7 +34,6 @@ class RgbYiqConverter:
         rgb = np.dot(np.linalg.inv(RgbYiqConverter.yiqToRgb), imgToConvert)
         rgb = rgb.T
         rgb = rgb.reshape((yiqImg.shape[0], yiqImg.shape[1], yiqImg.shape[2]))
-        rgb = np.clip(rgb.astype(np.float32), 0, 1)
         return rgb
 
 
@@ -93,8 +92,8 @@ def histogram_equalize(im_orig):
     if isGraySacle(im_orig):
         bw_im = im_orig
     else:
-        bw_im = rgb2yiq(im_orig)
-        bw_im = im_orig[:, :, 0]
+        yiqIm = rgb2yiq(im_orig)
+        bw_im = yiqIm[:, :, 0]
 
     bw_im = (bw_im * MAX_COLOR).astype(np.int)
     hist_orig, bin_edges = np.histogram(bw_im, bins=256, range=(0, 256))
@@ -106,6 +105,7 @@ def histogram_equalize(im_orig):
     # Starch the look up table
     lut = np.round(MAX_COLOR * (sumHist - minGray) / (sumHist.item(MAX_COLOR) - minGray))
     lut = lut.astype(np.int)
+    print("lut is: /n/n", lut)
 
 
     bw_im_eq = lut[bw_im]
@@ -114,19 +114,21 @@ def histogram_equalize(im_orig):
     bw_im_eq = bw_im_eq.astype(np.float32) / MAX_COLOR
     # Convert back to rgb if needed
     if not isGraySacle(im_orig):
-        bw_im_eq = convertYChannelToRgb(im_orig, bw_im_eq)
+        bw_im_eq = convertYChannelToRgb(yiqIm, bw_im_eq)
 
     return [bw_im_eq, hist_orig, hist_eq]
 
 
 def convertYChannelToRgb(im_orig, y_channel):
     im = np.stack((y_channel, im_orig[:, :, 1], im_orig[:, :, 2]), axis=-1)
-    return yiq2rgb(im)
+    im = yiq2rgb(im)
+    im = np.clip(im.astype(np.float32), 0, 1)
+    return im
 
 
 def findBorders(intensities, n_quant):
     borders = np.ndarray(shape=n_quant + 1, dtype=np.int)
-    borders.itemset(0,0)
+    borders.itemset(0, 0)
     borders.itemset(n_quant, MAX_COLOR)
 
     for i in range(0, n_quant - 1):
@@ -137,12 +139,12 @@ def findBorders(intensities, n_quant):
 def findIntesities(borders, histogram, n_quant):
     intensities = np.ndarray(shape=n_quant, dtype=np.int)
     for i in range(0, n_quant):
-        denominator = np.sum(histogram[borders[i]: borders[i + 1]])
+        cur_hist_vals = histogram[borders[i]: borders[i + 1]]
+        denominator = np.sum(cur_hist_vals)
         axis_values = np.linspace(borders[i], borders[i + 1], num=borders[i+1]-borders[i], endpoint=False, dtype=np.int)
-        hist_values = histogram[borders[i]: borders[i + 1]]
-        numerator = np.sum(axis_values * hist_values)
+        numerator = np.sum(axis_values * cur_hist_vals)
 
-        intensities.itemset(i, numerator / denominator)
+        intensities.itemset(i, numerator // denominator)
     return intensities
 
 def calcSSD(intensities, borders, histogram):
@@ -155,6 +157,13 @@ def calcSSD(intensities, borders, histogram):
 
     return error
 
+def intialBorders(hist, n_quant):
+    hist_no_zero = np.flatnonzero(hist)
+    borders = hist_no_zero[::len(hist_no_zero) // n_quant]
+    borders[0] = 0
+    borders[-1] = MAX_COLOR
+    return borders
+
 def quantize(im_orig, n_quant, n_iter):
     error = np.zeros(n_iter)
     if isGraySacle(im_orig):
@@ -166,16 +175,26 @@ def quantize(im_orig, n_quant, n_iter):
     bw_im = (bw_im * MAX_COLOR).astype(np.int)
     hist, bin_edges = np.histogram(bw_im, bins=256, range=(0, 256))
 
-    segBorders = np.linspace(0, MAX_COLOR, num=(n_quant + 1), endpoint=True, retstep=False, dtype=np.int)
-    # segIntensities = findIntesities(segBorders, hist, n_quant)
+    # segBorders = np.linspace(0, MAX_COLOR, num=(n_quant + 1), endpoint=True, retstep=False, dtype=np.int)
+    segBorders = intialBorders(hist, n_quant)
+    segIntensities = findIntesities(segBorders, hist, n_quant)
 
-    i = 0
+    i = 1
     convergence = False
     while i < n_iter and not convergence:
+
+        print("**************************************************")
+        print("The borders are: ", segBorders)
+        print("**************************************************")
+        print("**************************************************")
+        print("The Intensities are: ", segIntensities)
+        print("**************************************************")
+
+        error.itemset(i, calcSSD(segIntensities, segBorders, hist))
+
         segIntensities = findIntesities(segBorders, hist, n_quant)
         prevBorder = segBorders
         segBorders = findBorders(segIntensities, n_quant)
-        error.itemset(i, calcSSD(segIntensities, segBorders, hist))
 
         convergence = np.array_equal(prevBorder, segBorders)
         i += 1
@@ -199,21 +218,27 @@ def quantize(im_orig, n_quant, n_iter):
 
 
 # myPic = read_image('.\\test\external\jerusalem.jpg', 2)
-myPic = read_image('.\\tester_files\\compare_files\\grayscale\\equalized\\Low Contrast.jpg', 1)
 
+# myPic = read_image('.//tester_files//compare_files//grayscale//equalized//Low Contrast.jpg', 1)
+
+'''
+print("##################################################")
+print("The Pic is: ", myPic)
+print("##################################################")
+'''
+'''
 # myPic = read_image('color.jpg', 2)
 myPic, error = quantize(myPic, 7, 100)
 arrdisplay(myPic, 1)
 plt.plot(error)
 plt.show()
+'''
 
 '''
-myPic = read_image('.\\tester_files\\compare_files\\grayscale\\equalized\\Low Contrast.jpg', 1)
+myPic = read_image('.//tester_files//compare_files//rgb//equalized//Low Contrast.jpg', 2)
+
 myPic, hist_orig, hist_eq = histogram_equalize(myPic)
-arrdisplay(myPic, 1)
+arrdisplay(myPic, 2)
 plt.plot(hist_orig, 'b', hist_eq, 'r')
 plt.show()
 '''
-#plt.imshow(yiqPic[:, :, 0], plt.cm.gray)
-
-#imdisplay('color.jpg', 1)
