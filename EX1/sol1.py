@@ -34,7 +34,7 @@ class RgbYiqConverter:
         rgb = np.dot(np.linalg.inv(RgbYiqConverter.yiqToRgb), imgToConvert)
         rgb = rgb.T
         rgb = rgb.reshape((yiqImg.shape[0], yiqImg.shape[1], yiqImg.shape[2]))
-        return rgb
+        return rgb.astype(np.float32)
 
 
 def isGraySacle(im):
@@ -137,7 +137,7 @@ def findBorders(intensities, n_quant):
 
 
 def findIntesities(borders, histogram, n_quant):
-    intensities = np.ndarray(shape=n_quant, dtype=np.int)
+    intensities = np.ndarray(shape=n_quant, dtype=np.uint8)
     for i in range(0, n_quant):
         cur_hist_vals = histogram[borders[i]: borders[i + 1]]
         denominator = np.sum(cur_hist_vals)
@@ -149,19 +149,27 @@ def findIntesities(borders, histogram, n_quant):
 
 def calcSSD(intensities, borders, histogram):
     error = 0
-    i = 0
-    for intens in intensities:
-        for xIndex in range(borders[i], borders[i + 1]):
-            error += np.power((intens - xIndex), 2) * histogram[xIndex]
-        i += 1
+
+    for i in range(0, len(intensities)):
+        axis_values = np.linspace(borders[i], borders[i + 1], num=borders[i + 1] - borders[i], endpoint=False,
+                                  dtype=np.int)
+        p = np.power((intensities.item(i) - axis_values), 2)
+        error += np.sum(p * histogram[axis_values])
 
     return error
 
-def intialBorders(hist, n_quant):
-    hist_no_zero = np.flatnonzero(hist)
-    borders = hist_no_zero[::len(hist_no_zero) // n_quant]
-    borders[0] = 0
-    borders[-1] = MAX_COLOR
+def intialBorders(im, hist, n_quant):
+    borders = np.zeros(n_quant + 1, dtype=np.int)
+    total_pixels = im.shape[0] * im.shape[1]
+    section_pixels = total_pixels / n_quant
+    borders[n_quant] = MAX_COLOR
+
+    sumHist = np.cumsum(hist)
+
+    for i in range(1, n_quant):
+        index = np.argmax(sumHist >= section_pixels * i)
+        borders.itemset(i, index)
+
     return borders
 
 def quantize(im_orig, n_quant, n_iter):
@@ -172,25 +180,26 @@ def quantize(im_orig, n_quant, n_iter):
         bw_im = rgb2yiq(im_orig)
         bw_im = bw_im[:, :, 0]
 
-    bw_im = (bw_im * MAX_COLOR).astype(np.int)
-    hist, bin_edges = np.histogram(bw_im, bins=MAX_COLOR + 1, range=(0, MAX_COLOR + 1))
+    bw_im = (np.round(bw_im * 255)).astype(np.int)
+    hist, bin_edges = np.histogram(bw_im, bins=np.arange(257))
 
-    # segBorders = np.linspace(0, MAX_COLOR, num=(n_quant + 1), endpoint=True, retstep=False, dtype=np.int)
-    segBorders = intialBorders(hist, n_quant)
+    segBorders = intialBorders(bw_im, hist, n_quant)
     segIntensities = findIntesities(segBorders, hist, n_quant)
 
     i = 1
     convergence = False
     while i < n_iter and not convergence:
 
+        error.itemset(i, calcSSD(segIntensities, segBorders, hist))
         print("**************************************************")
         print("The borders are: ", segBorders)
         print("**************************************************")
         print("**************************************************")
         print("The Intensities are: ", segIntensities)
         print("**************************************************")
-
-        error.itemset(i, calcSSD(segIntensities, segBorders, hist))
+        print("**************************************************")
+        print("The error is: ", error.item(i))
+        print("**************************************************")
 
         segIntensities = findIntesities(segBorders, hist, n_quant)
         prevBorder = segBorders
@@ -219,7 +228,7 @@ def quantize(im_orig, n_quant, n_iter):
 
 # myPic = read_image('.\\test\external\jerusalem.jpg', 2)
 
-myPic = read_image('.//tester_files//compare_files//grayscale//equalized//monkey.jpg', 1)
+myPic = read_image('.//tester_files//monkey.jpg', 1)
 
 '''
 print("##################################################")
