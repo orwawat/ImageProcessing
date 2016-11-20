@@ -96,7 +96,7 @@ def histogram_equalize(im_orig):
         bw_im = yiqIm[:, :, 0]
 
     bw_im = (bw_im * MAX_COLOR).astype(np.int)
-    hist_orig, bin_edges = np.histogram(bw_im, bins=256, range=(0, 256))
+    hist_orig, bin_edges = np.histogram(bw_im, bins=MAX_COLOR + 1, range=(0, MAX_COLOR + 1))
     sumHist = np.cumsum(hist_orig, dtype=np.float32)
 
     sumHist = (sumHist / (bw_im.shape[0] * bw_im.shape[1]) * MAX_COLOR).astype(np.float32)
@@ -173,7 +173,7 @@ def quantize(im_orig, n_quant, n_iter):
         bw_im = bw_im[:, :, 0]
 
     bw_im = (bw_im * MAX_COLOR).astype(np.int)
-    hist, bin_edges = np.histogram(bw_im, bins=256, range=(0, 256))
+    hist, bin_edges = np.histogram(bw_im, bins=MAX_COLOR + 1, range=(0, MAX_COLOR + 1))
 
     # segBorders = np.linspace(0, MAX_COLOR, num=(n_quant + 1), endpoint=True, retstep=False, dtype=np.int)
     segBorders = intialBorders(hist, n_quant)
@@ -202,7 +202,7 @@ def quantize(im_orig, n_quant, n_iter):
     # build a look up table
     lut = np.zeros(MAX_COLOR + 1)
     for i in range(0, len(segBorders) - 1):
-        lut[segBorders[i]: segBorders[i+1]] = segIntensities[i]
+        lut[segBorders[i]: segBorders[i + 1]] = segIntensities[i]
     lut[-1] = segIntensities[-1]
 
     lut = lut.astype(np.int)
@@ -219,20 +219,20 @@ def quantize(im_orig, n_quant, n_iter):
 
 # myPic = read_image('.\\test\external\jerusalem.jpg', 2)
 
-# myPic = read_image('.//tester_files//compare_files//grayscale//equalized//Low Contrast.jpg', 1)
+myPic = read_image('.//tester_files//compare_files//grayscale//equalized//monkey.jpg', 1)
 
 '''
 print("##################################################")
 print("The Pic is: ", myPic)
 print("##################################################")
 '''
-'''
+
 # myPic = read_image('color.jpg', 2)
-myPic, error = quantize(myPic, 7, 100)
+myPic, error = quantize(myPic, 3, 4)
 arrdisplay(myPic, 1)
 plt.plot(error)
 plt.show()
-'''
+
 
 '''
 myPic = read_image('.//tester_files//compare_files//rgb//equalized//Low Contrast.jpg', 2)
