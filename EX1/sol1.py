@@ -198,9 +198,10 @@ def quantize(im_orig, n_quant, n_iter):
             segBorders = findBorders(segIntensities, n_quant)
             segIntensities = findIntesities(segBorders, hist, n_quant)
 
-        error.append(calcSSD(segIntensities, segBorders, hist))
-
         convergence = np.array_equal(prevBorder, segBorders)
+        if not convergence:
+            error.append(calcSSD(segIntensities, segBorders, hist))
+
         index += 1
 
     # build a look up table
@@ -216,4 +217,4 @@ def quantize(im_orig, n_quant, n_iter):
         im_quant = im_quant.astype(np.float32) / MAX_COLOR
         im_quant = convertYChannelToRgb(yiq_im, im_quant)
 
-    return [im_quant, error[:index - 1]]
+    return [im_quant, error]
