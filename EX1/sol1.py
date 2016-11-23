@@ -132,38 +132,48 @@ def findBorders(intensities, n_quant):
     borders.itemset(n_quant, MAX_COLOR + 1)
 
     for i in range(0, n_quant - 1):
-        borders.itemset(i + 1, np.int((intensities.item(i) + intensities.item(i + 1)) / 2))
+        borders.itemset(i + 1, np.around((intensities.item(i) + intensities.item(i + 1)) / 2))
     return borders
 
 
 def findIntesities(borders, histogram, n_quant):
     intensities = np.ndarray(shape=n_quant)
+
     for i in range(0, n_quant):
         cur_hist_vals = histogram[borders[i]: borders[i + 1]]
-        denominator = np.sum(cur_hist_vals).astype(np.int)
+        denominator = np.sum(cur_hist_vals)
         axis_values = np.linspace(borders[i], borders[i + 1], num=borders[i+1]-borders[i], endpoint=False, dtype=np.int)
-        numerator = np.sum(axis_values * cur_hist_vals).astype(np.int)
+        numerator = np.sum(axis_values * cur_hist_vals)
 
-        intensities.itemset(i, numerator // denominator)
+        intensities.itemset(i, np.around(numerator / denominator))
     return intensities
 
 def calcSSD(intensities, borders, histogram):
 
     error = 0
     # sum on k-1 intensities
+
     for i in range(0, len(intensities)):
         # get all the values from z_i to z_i_1
         axis_values = np.linspace(borders[i], borders[i + 1], num=borders[i + 1] - borders[i], endpoint=False,
                                   dtype=np.int)
-        cur_error = np.sum(np.square(intensities.item(i) - axis_values) * histogram[axis_values])
+        cur_error = np.sum(np.square(intensities[i] - axis_values) * histogram[axis_values])
         error += cur_error
+    # error += np.square(intensities[-1] - borders[-1]) * histogram[-1]
 
+    ''' exactly same result
+    for i in range(0, len(intensities)):
+        a = 0
+        for k in range(borders[i], borders[i+1]):
+            a += np.square(intensities.item(i) - k) * histogram[k]
+        error += a
+    '''
     return error
 
-def intialBorders(im, hist, n_quant):
+def intialBorders(shape, hist, n_quant):
     borders = np.zeros(n_quant + 1, dtype=np.int)
-    total_pixels = im.shape[0] * im.shape[1]
-    section_pixels = np.int(total_pixels / n_quant)
+    total_pixels = shape[0] * shape[1]
+    section_pixels = np.around(total_pixels / n_quant)
     borders[n_quant] = MAX_COLOR + 1
 
     sumHist = np.cumsum(hist)
@@ -183,22 +193,23 @@ def quantize(im_orig, n_quant, n_iter):
         yiq_im = np.clip(yiq_im.astype(np.float32), 0, 1)
         bw_im = yiq_im[:, :, 0]
 
-    # hist, bin_edges = np.histogram(bw_im, bins=np.arange(257))
-    hist = np.histogram(bw_im, bins=MAX_COLOR + 1, range=(0, 1))[0]
-    # bw_im = (np.round(bw_im * 255)).astype(np.int)
+    bw_im = np.around(bw_im * MAX_COLOR).astype(np.int)
+    hist, bins = np.histogram(bw_im, bins=np.arange(MAX_COLOR + 2))
+    # print(calcSSD([56., 109., 161., 208.], [0, 88, 133, 188, 255], hist))
+    # hist = np.histogram(bw_im, bins=MAX_COLOR + 1, range=(0, 1))[0]
 
-    i = 0
+    index = 0
     convergence = False
-    while i < n_iter and not convergence:
-        if i == 0:
-            segBorders = intialBorders(bw_im, hist, n_quant)
-            # TODO: get number of iterations from: http://moodle2.cs.huji.ac.il/nu16/mod/forum/discuss.php?d=4781
+    while index < n_iter and not convergence:
+        if index == 0:
+            segBorders = intialBorders(bw_im.shape, hist, n_quant)
             segIntensities = findIntesities(segBorders, hist, n_quant)
             prevBorder = 0
         else:
             prevBorder = segBorders
             segBorders = findBorders(segIntensities, n_quant)
             segIntensities = findIntesities(segBorders, hist, n_quant)
+
         error.append(calcSSD(segIntensities, segBorders, hist))
         def my_print():
             print("**************************************************")
@@ -208,11 +219,11 @@ def quantize(im_orig, n_quant, n_iter):
             print("The Intensities are: ", segIntensities)
             print("**************************************************")
             print("**************************************************")
-            print("The error is: ", error[i])
+            print("The error is: ", error[index])
             print("**************************************************")
         my_print()
         convergence = np.array_equal(prevBorder, segBorders)
-        i += 1
+        index += 1
 
     # build a look up table
     lut = np.zeros(MAX_COLOR + 1)
@@ -220,26 +231,26 @@ def quantize(im_orig, n_quant, n_iter):
         lut[segBorders[i]: segBorders[i + 1]] = segIntensities[i]
     lut[-1] = segIntensities[-1]
 
-    im_quant = lut[(bw_im * 255).astype(np.int)]
+    im_quant = lut[bw_im]
 
     # convert back to color image
     if not isGraySacle(im_orig):
         im_quant = im_quant.astype(np.float32) / MAX_COLOR
         im_quant = convertYChannelToRgb(yiq_im, im_quant)
 
-    return [im_quant, error]
+    return [im_quant, error[:index - 1]]
 
 
 
 # myPic = read_image('.\\test\external\jerusalem.jpg', 2)
 
-# myPic = read_image('.//tester_files//Low Contrast.jpg', 1)
-myPic = read_image('.//tester_files//monkey.jpg', 1)
-# myPic = read_image('.//tester_files//jerusalem.jpg', 2)
+# myPic = read_image('.//tester_files//Low Contrast.jpg', 2)
+# myPic = read_image('.//tester_files//monkey.jpg', 2)
+myPic = read_image('.//tester_files//jerusalem.jpg', 2)
 
 
 myPic, error = quantize(myPic, 4, 15)
-arrdisplay(myPic, 1)
+arrdisplay(myPic, 2)
 print(error)
 plt.plot(error)
 plt.show()
