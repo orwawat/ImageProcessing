@@ -1,0 +1,2 @@
+In the procedure we divide in q_i ==> In the intensitie of each of the segments.
+If one of the segments will be empty, we will not be able to find a meaningfull intensitie and we will divide in zero that ofcourse will lead to a crash.
