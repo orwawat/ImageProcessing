@@ -96,7 +96,6 @@ def histogram_equalize(im_orig):
         yiq_im = np.clip(yiq_im.astype(np.float32), 0, 1)
         bw_im = yiq_im[:, :, 0]
 
-    # bw_im = (bw_im * MAX_COLOR).astype(np.int)
     hist_orig, bin_edges = np.histogram(bw_im, bins=MAX_COLOR + 1, range=(0, 1))
     sumHist = np.cumsum(hist_orig)
 
@@ -152,22 +151,13 @@ def calcSSD(intensities, borders, histogram):
 
     error = 0
     # sum on k-1 intensities
-
     for i in range(0, len(intensities)):
         # get all the values from z_i to z_i_1
         axis_values = np.linspace(borders[i], borders[i + 1], num=borders[i + 1] - borders[i], endpoint=False,
                                   dtype=np.int)
         cur_error = np.sum(np.square(intensities[i] - axis_values) * histogram[axis_values])
         error += cur_error
-    # error += np.square(intensities[-1] - borders[-1]) * histogram[-1]
 
-    ''' exactly same result
-    for i in range(0, len(intensities)):
-        a = 0
-        for k in range(borders[i], borders[i+1]):
-            a += np.square(intensities.item(i) - k) * histogram[k]
-        error += a
-    '''
     return error
 
 def intialBorders(shape, hist, n_quant):
@@ -195,8 +185,6 @@ def quantize(im_orig, n_quant, n_iter):
 
     bw_im = np.around(bw_im * MAX_COLOR).astype(np.int)
     hist, bins = np.histogram(bw_im, bins=np.arange(MAX_COLOR + 2))
-    # print(calcSSD([56., 109., 161., 208.], [0, 88, 133, 188, 255], hist))
-    # hist = np.histogram(bw_im, bins=MAX_COLOR + 1, range=(0, 1))[0]
 
     index = 0
     convergence = False
@@ -211,17 +199,7 @@ def quantize(im_orig, n_quant, n_iter):
             segIntensities = findIntesities(segBorders, hist, n_quant)
 
         error.append(calcSSD(segIntensities, segBorders, hist))
-        def my_print():
-            print("**************************************************")
-            print("The borders are: ", segBorders)
-            print("**************************************************")
-            print("**************************************************")
-            print("The Intensities are: ", segIntensities)
-            print("**************************************************")
-            print("**************************************************")
-            print("The error is: ", error[index])
-            print("**************************************************")
-        my_print()
+
         convergence = np.array_equal(prevBorder, segBorders)
         index += 1
 
@@ -239,30 +217,3 @@ def quantize(im_orig, n_quant, n_iter):
         im_quant = convertYChannelToRgb(yiq_im, im_quant)
 
     return [im_quant, error[:index - 1]]
-
-
-
-# myPic = read_image('.\\test\external\jerusalem.jpg', 2)
-
-# myPic = read_image('.//tester_files//Low Contrast.jpg', 2)
-# myPic = read_image('.//tester_files//monkey.jpg', 2)
-myPic = read_image('.//tester_files//jerusalem.jpg', 2)
-
-
-myPic, error = quantize(myPic, 4, 15)
-arrdisplay(myPic, 2)
-print(error)
-plt.plot(error)
-plt.show()
-'''
-
-myPic = read_image('.//tester_files//Low Contrast.jpg', 2)
-# myPic = read_image('.//tester_files//monkey.jpg', 1)
-# myPic = read_image('.//tester_files//jerusalem.jpg', 2)
-
-myPic, hist_orig, hist_eq = histogram_equalize(myPic)
-arrdisplay(myPic, 2)
-
-plt.plot(hist_orig, 'b', hist_eq, 'r')
-plt.show()
-'''
