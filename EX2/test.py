@@ -3,6 +3,7 @@ import sol2 as mySol
 
 def get_random_vec():
     signal = np.random.random(np.random.randint(1, 100))
+    signal = signal * 14
     signal = signal.astype(np.float32)
     return signal
 
@@ -15,13 +16,17 @@ def test_DFT():
     print("************* Start test_DFT: \n")
     # Create 1D array
     signal = get_random_vec()
+    signal = np.array([1,2,3,4])
     # Convert to a 2D array
-    signal = signal.reshape((signal.size, 1))
+    # signal = signal.reshape((signal.size, 1))
     myVal = mySol.DFT(signal)
     correctVal = np.fft.fft(signal)
     result = np.array_equiv(myVal, correctVal) and type(myVal) == type(correctVal)
     if (result):
         print("VVVVVVVVVVV passed test_DFT VVVVVVVVVVVVVVV\n")
+        print("My result is: ", myVal)
+        print("Correct Result is: ", correctVal)
+
     else:
         print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
         print("Faild test_DFT")
@@ -65,7 +70,23 @@ def test_DFT_ON_IDFT():
         print("Starting vec is: ", signal)
         print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
 
+def test_DFT2():
+    print("************* Start test_DFT2: \n")
+    # Create 1D array
+    img = np.random.rand(np.random.randint(100, 500), np.random.randint(100, 500))
+    # Convert to a 2D array
+    myVal = mySol.DFT2(signal)
+    correctVal = np.fft.fft2(signal)
+    result = np.array_equiv(myVal, correctVal) and type(myVal) == type(correctVal)
+    if (result):
+        print("VVVVVVVVVVV passed test_DFT2 VVVVVVVVVVVVVVV\n")
+    else:
+        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+        print("Faild test_DFT")
+        print("My result is: ", myVal)
+        print("Correct Result is: ", correctVal)
+        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
 
-test_IDFT()
+# test_IDFT()
 test_DFT()
-test_DFT_ON_IDFT()
+# test_DFT_ON_IDFT()
