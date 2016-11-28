@@ -2,7 +2,7 @@ import numpy as np
 from skimage import color
 import sol2 as mySol
 import matplotlib.pyplot as plt
-from scipy.misc import imread as imread
+from scipy.misc import imread as imread, imsave as imsave
 
 vec = np.array([1,2,3])
 
@@ -83,6 +83,9 @@ def test_DFT2():
         print("Correct Result is: ", correctVal)
         print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
 
+def show_plot(s_im):
+    plt.imshow(s_im, plt.cm.gray)
+    plt.show()
 
 def read_gray_im():
     im = imread(".//im.jpg")
@@ -108,11 +111,54 @@ def test_fourier_der():
     der_im = mySol.fourier_der(im)
     # plt.imshow(der_im, plt.cm.gray)
 
+def test_create_kernel():
+    print("************* Start test_create_kernel: \n")
+    ker_size = 3
+    kernel = mySol.create_kernel(ker_size)
+    if np.sum(kernel) != 1:
+        print("kernel sum should be 1")
+    else:
+        print("the kernel is:\n", kernel)
+
+
+def test_blur_spatial():
+    ker_size = 5
+    im = read_gray_im()
+    blur_im = mySol.blur_spatial(im, ker_size)
+    show_plot(im)
+    # show_plot(blur_im)
+    imsave('C:\\Users\\Alon\\Documents\\HUJI\\ImageProcessing\\Exercises\\EX2\\blur_im.jpg', blur_im)
+
+def test_blur_fourier():
+    ker_size = 3
+    im = read_gray_im()
+    blur_im = mySol.blur_fourier(im, ker_size)
+    # show_plot(im)
+    # show_plot(blur_im)
+    imsave('C:\\Users\\Alon\\Documents\\HUJI\\ImageProcessing\\Exercises\\EX2\\blur_fourier.jpg', blur_im)
+
+def compare_blur():
+    ker_size = 5
+    im = read_gray_im()
+    blur_im = mySol.blur_spatial(im, ker_size)
+    foriur_blur_im = mySol.blur_fourier(im, ker_size)
+    # blur_im = np.round(blur_im, 3)
+    # foriur_blur_im = np.round(foriur_blur_im, 3)
+    # diff= np.subtract(blur_im, foriur_blur_im)
+    # indcies = np.nonzero(diff)
+    imsave('C:\\Users\\Alon\\Documents\\HUJI\\ImageProcessing\\Exercises\\EX2\\blur_fourier1.jpg', foriur_blur_im)
+    imsave('C:\\Users\\Alon\\Documents\\HUJI\\ImageProcessing\\Exercises\\EX2\\blur_im1.jpg', blur_im)
+    print(np.allclose(blur_im, foriur_blur_im))
+
+
 # test_IDFT()
 # test_DFT()
 # test_DFT_ON_IDFT()
 # test_DFT2()
 # test_conv_der()
-test_fourier_der()
-
+# test_fourier_der()
+# test_create_kernel()
+# test_blur_spatial()
+# test_blur_fourier()
+compare_blur()
 a = 76
