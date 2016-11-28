@@ -14,7 +14,8 @@ def test_DFT():
     correctVal = np.fft.fft(signal)
     signal = signal.reshape((signal.size, 1))
     myVal = mySol.DFT(signal)
-    result = np.array_equiv(myVal, correctVal) and type(myVal) == type(correctVal)
+    result = np.array_equiv(np.round(myVal(), decimals=3), np.round(correctVal, decimals=3))\
+             and type(myVal) == type(correctVal)
     if (result):
         print("VVVVVVVVVVV passed test_DFT VVVVVVVVVVVVVVV\n")
         print("My result is: ", myVal)
@@ -36,7 +37,8 @@ def test_IDFT():
     fourier_signal = fourier_signal.reshape((fourier_signal.size, 1))
 
     myVal = mySol.IDFT(fourier_signal)
-    result = np.array_equiv(myVal.flatten(), correctVal) #and type(myVal) == type(correctVal)
+    result = np.array_equiv(np.round(myVal.flatten(), decimals=3), np.round(correctVal, decimals=3))
+    #and type(myVal) == type(correctVal)
     if (result):
         print("VVVVVVVVVVV passed test_IDFT VVVVVVVVVVVVVVV\n")
     else:
@@ -66,11 +68,12 @@ def test_DFT_ON_IDFT():
 def test_DFT2():
     print("************* Start test_DFT2: \n")
     # Create 1D array
-    img = np.row_stack((vec, vec + 1, vec + 2)) #, vec + 5, vec - 2
+    img = np.row_stack((vec, vec + 5, vec - 2, vec + 1241)) #, vec + 5, vec - 2
     # Convert to a 2D array
-    myVal = mySol.DFT1(img)
-    correctVal = np.fft.fft2(img)
-    result = np.array_equiv(myVal, correctVal) and type(myVal) == type(correctVal)
+    myVal = mySol.DFT2(img)
+    correctVal = np.fft.fft2(img).astype(np.complex128)
+    result = np.array_equiv(np.round(myVal, decimals=3), np.round(correctVal, decimals=3))\
+             and type(myVal) == type(correctVal)
     if (result):
         print("VVVVVVVVVVV passed test_DFT2 VVVVVVVVVVVVVVV\n")
     else:
@@ -82,7 +85,8 @@ def test_DFT2():
 
 
 def read_gray_im():
-    im = imread(".\im.jpg")
+    im = imread(".//im.jpg")
+    # im = imread(".\\im.jpg")
     # tokenize
     im_float = im.astype(np.float32)
     im_float /= 255
