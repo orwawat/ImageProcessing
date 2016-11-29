@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from scipy import signal, linalg
+from scipy import signal as sig, linalg
 from scipy.misc import imread as imread, imsave as imsave
 import matplotlib.pyplot as plt
 
@@ -8,23 +8,24 @@ DERIVATIVE_KERNEL = np.array([1, 0, -1])
 
 
 def DFT(signal):
-    # First dimension
     N = signal.shape[0]
     dft_matrix = linalg.dft(N)
     fourier_matrix = np.dot(dft_matrix, signal)
-    M = signal.shape[1]
 
+    M = signal.shape[1]
     dft_matrix = linalg.dft(M)
     fourier_matrix = np.dot(dft_matrix, fourier_matrix.T).T
     return fourier_matrix
 
 def IDFT(fourier_signal):
     N = fourier_signal.shape[0]
-    u, x = np.meshgrid(np.arange(N), np.arange(N))
-    curExp = np.exp(2 * np.pi * 1J * x * u / N)
-    # TODO: http://moodle2.cs.huji.ac.il/nu16/mod/forum/discuss.php?d=6956
-    result_vec = (np.dot(fourier_signal.flatten(), curExp) / N).real.astype(np.float32)
-    return np.row_stack(result_vec)
+    dft_matrix = linalg.inv(linalg.dft(N))
+    fourier_matrix = np.dot(dft_matrix, fourier_signal)
+
+    M = fourier_signal.shape[1]
+    dft_matrix = linalg.inv(linalg.dft(M))
+    fourier_matrix = np.dot(dft_matrix, fourier_matrix.T).T
+    return fourier_matrix
 
 def DFT2(image):
     return DFT(image)
@@ -32,7 +33,8 @@ def DFT2(image):
 
 
 def IDFT2(fourier_image):
-    return np.fft.ifft2(fourier_image)
+    return IDFT(fourier_image)
+    # return np.fft.ifft2(fourier_image)
 
 
 
@@ -42,8 +44,8 @@ def conv_der(im):
                                 np.reshape(DERIVATIVE_KERNEL, (DERIVATIVE_KERNEL.shape[0], 1)),
                                 np.zeros(DERIVATIVE_KERNEL.shape)))
 
-    dx = signal.convolve2d(im, x_kerenl, mode='same')
-    dy = signal.convolve2d(im, y_kerenl, mode='same')
+    dx = sig.convolve2d(im, x_kerenl, mode='same')
+    dy = sig.convolve2d(im, y_kerenl, mode='same')
 
     dx = dx.reshape(im.shape)
     dy = dy.reshape(im.shape)
@@ -103,8 +105,8 @@ def create_kernel(size):
     kernel = base_kernel = np.array([[1, 1]])
 
     for i in range(size - 2):
-        kernel = signal.convolve2d(base_kernel, kernel)
-    kernel = signal.convolve2d(kernel, kernel.T)
+        kernel = sig.convolve2d(base_kernel, kernel)
+    kernel = sig.convolve2d(kernel, kernel.T)
 
     total_kernel = np.sum(kernel)
     kernel = kernel.astype(np.float32) / total_kernel
@@ -112,7 +114,7 @@ def create_kernel(size):
 
 def blur_spatial(im, kernel_size):
     kernel = create_kernel(kernel_size)
-    blur_im = signal.convolve2d(im, kernel, mode='same', boundary='wrap').astype(np.float32)
+    blur_im = sig.convolve2d(im, kernel, mode='same', boundary='wrap').astype(np.float32)
     return blur_im
 
 def blur_fourier(im, kernel_size):
