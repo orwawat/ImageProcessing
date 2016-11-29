@@ -5,7 +5,7 @@ import sol2 as mySol
 import matplotlib.pyplot as plt
 from scipy.misc import imread as imread, imsave as imsave
 
-vec = np.array([1,2,3])
+vec = np.array([1,2,3,12,14,0,250,82])
 IM_NAME = 'low contrast.jpg'
 def test_DFT():
     print("************* Start test_DFT: \n")
@@ -14,7 +14,7 @@ def test_DFT():
     # Convert to a 2D array
     correctVal = np.fft.fft(signal)
     signal = signal.reshape((signal.size, 1))
-    myVal = mySol.DFT1(signal)
+    myVal = mySol.DFT(signal)
     result = np.array_equiv(np.round(myVal, decimals=3), np.round(correctVal, decimals=3))\
              and type(myVal) == type(correctVal)
     if (result):
@@ -69,12 +69,12 @@ def test_DFT_ON_IDFT():
 def test_DFT2():
     print("************* Start test_DFT2: \n")
     # Create 1D array
-    img = np.row_stack((vec, vec + 5, vec - 2, vec + 1241)) #, vec + 5, vec - 2
+    img = np.row_stack((vec, vec + 5, vec - 2, vec + 1241, vec, vec * 1/3))
     # Convert to a 2D array
     myVal = mySol.DFT2(img)
     correctVal = np.fft.fft2(img).astype(np.complex128)
-    result = np.array_equiv(np.round(myVal, decimals=3), np.round(correctVal, decimals=3))\
-             and type(myVal) == type(correctVal)
+
+    result = np.allclose(myVal, correctVal)
     if (result):
         print("VVVVVVVVVVV passed test_DFT2 VVVVVVVVVVVVVVV\n")
     else:
@@ -154,9 +154,9 @@ def compare_blur():
 
 
 # test_IDFT()
-test_DFT()
+# test_DFT()
 # test_DFT_ON_IDFT()
-# test_DFT2()
+test_DFT2()
 # test_conv_der()
 # test_fourier_der()
 # test_create_kernel()

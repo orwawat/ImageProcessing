@@ -7,19 +7,16 @@ import matplotlib.pyplot as plt
 DERIVATIVE_KERNEL = np.array([1, 0, -1])
 
 
-def DFT1(signal):
+def DFT(signal):
+    # First dimension
     N = signal.shape[0]
     dft_matrix = linalg.dft(N)
-    return np.dot(dft_matrix, signal)
+    fourier_matrix = np.dot(dft_matrix, signal)
+    M = signal.shape[1]
 
-def DFT(signal):
-    N = signal.shape[0]
-    u, x = np.meshgrid(np.arange(N), np.arange(N))
-    curExp = np.exp(-2 * np.pi * 1J * u * x / N)
-    result_vec = np.dot(signal, curExp).astype(np.complex128)
-    result_vec = np.row_stack(result_vec)
-    # print(result_vec.shape)
-    return result_vec
+    dft_matrix = linalg.dft(M)
+    fourier_matrix = np.dot(dft_matrix, fourier_matrix.T).T
+    return fourier_matrix
 
 def IDFT(fourier_signal):
     N = fourier_signal.shape[0]
@@ -30,24 +27,8 @@ def IDFT(fourier_signal):
     return np.row_stack(result_vec)
 
 def DFT2(image):
-    return np.fft.fft2(image)
-    row_fourier_image = fourier_image = np.zeros(image.shape, dtype=np.complex128)
-    # N = image.shape[0]
-    # u, x = np.meshgrid(np.arange(N), np.arange(N))
-    # for v in range(image.shape[1]):
-    #     curExp = np.exp(-2 * np.pi * 1J * u * x / N)
-    #     fourier_image[:, v] = np.dot(curExp, DFT(image[:, v]).flatten()) / N
+    return DFT(image)
 
-    # Compute 1D fourier on each row
-    for i in range(image.shape[0]):
-        row_fourier_image[i, :] = DFT(image[i, :]).reshape(image.shape[1])
-
-    # Compute the 1D fourier on each column
-    for j in range(image.shape[1]):
-        fourier_image[:, j] = DFT(row_fourier_image[:, j]).reshape(1, image.shape[0])
-
-
-    return fourier_image
 
 
 def IDFT2(fourier_image):
