@@ -30,12 +30,8 @@ def IDFT(fourier_signal):
 def DFT2(image):
     return DFT(image)
 
-
-
 def IDFT2(fourier_image):
     return IDFT(fourier_image)
-    # return np.fft.ifft2(fourier_image)
-
 
 
 def conv_der(im):
