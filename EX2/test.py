@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from skimage import color
 import sol2 as mySol
@@ -5,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.misc import imread as imread, imsave as imsave
 
 vec = np.array([1,2,3])
-
+IM_NAME = 'low contrast.jpg'
 def test_DFT():
     print("************* Start test_DFT: \n")
     # Create 1D array
@@ -13,8 +14,8 @@ def test_DFT():
     # Convert to a 2D array
     correctVal = np.fft.fft(signal)
     signal = signal.reshape((signal.size, 1))
-    myVal = mySol.DFT(signal)
-    result = np.array_equiv(np.round(myVal(), decimals=3), np.round(correctVal, decimals=3))\
+    myVal = mySol.DFT1(signal)
+    result = np.array_equiv(np.round(myVal, decimals=3), np.round(correctVal, decimals=3))\
              and type(myVal) == type(correctVal)
     if (result):
         print("VVVVVVVVVVV passed test_DFT VVVVVVVVVVVVVVV\n")
@@ -88,28 +89,29 @@ def show_plot(s_im):
     plt.show()
 
 def read_gray_im():
-    im = imread(".//im.jpg")
-    # im = imread(".\\im.jpg")
-    # tokenize
+    im = imread(".//images//" + IM_NAME)
+
     im_float = im.astype(np.float32)
     im_float /= 255
     im_gray = color.rgb2gray(im_float)
     im_gray = im_gray.astype(np.float32)
-    grayImage = im_gray
-    # plt.imshow(im_gray, plt.cm.gray)
-    # plt.show()
-    return grayImage
+    plt.imshow(im_gray, plt.cm.gray)
+    plt.show()
+    return im_gray
 
 def test_conv_der():
     im = read_gray_im()
     der_im = mySol.conv_der(im)
+    imsave(os.getcwd() + '/results' + '/conv_der_' + IM_NAME, der_im)
     plt.imshow(der_im, plt.cm.gray)
-    # plt.show()
+    plt.show()
 
 def test_fourier_der():
     im = read_gray_im()
-    der_im = mySol.fourier_der(im)
-    # plt.imshow(der_im, plt.cm.gray)
+    der_im = mySol.fourier_der1(im)
+    imsave(os.getcwd() + '/results' + '/111fourier_der_' + IM_NAME, der_im)
+    plt.imshow(der_im, plt.cm.gray)
+    plt.show()
 
 def test_create_kernel():
     print("************* Start test_create_kernel: \n")
@@ -152,7 +154,7 @@ def compare_blur():
 
 
 # test_IDFT()
-# test_DFT()
+test_DFT()
 # test_DFT_ON_IDFT()
 # test_DFT2()
 # test_conv_der()
@@ -160,5 +162,5 @@ def compare_blur():
 # test_create_kernel()
 # test_blur_spatial()
 # test_blur_fourier()
-compare_blur()
+# compare_blur()
 a = 76
