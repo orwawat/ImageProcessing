@@ -1,29 +1,66 @@
 import numpy as np
-import os
 from scipy import signal as sig, linalg
-from scipy.misc import imread as imread, imsave as imsave
-import matplotlib.pyplot as plt
+from scipy.misc import imread as imread
+from skimage import color
 
 DERIVATIVE_KERNEL = np.array([1, 0, -1])
 
 
+def read_image(filename, representation):
+    im = imread(filename)
+    # tokenize
+    im_float = im.astype(np.float32)
+    im_float /= 255
+
+    def isGraySacle(im):
+        return len(im.shape) < 3
+
+    def getGrayImage(im_float):
+        '''
+        :param im_float: image astype=np.float32, values are in [0,1]
+        :return:
+        '''
+        if isGraySacle(im_float):
+            # Already gray, no need to convert
+            grayImage = im_float
+        else:
+            # Convert to gray scale
+            im_gray = color.rgb2gray(im_float)
+            im_gray = im_gray.astype(np.float32)
+            grayImage = im_gray
+
+        return grayImage
+
+    if representation == 1:
+        # Convert to gray
+        returnImage = getGrayImage(im_float)
+    else:
+        returnImage = im_float
+
+    return returnImage
+
+def create_dft_matrix(size):
+    u, x = np.meshgrid(np.arange(size), np.arange(size))
+    omega = np.exp(-2J * np.pi / size)
+    return np.power(omega, u * x)
+
 def DFT(signal):
     N = signal.shape[0]
-    dft_matrix = linalg.dft(N)
+    dft_matrix = create_dft_matrix(N)
     fourier_matrix = np.dot(dft_matrix, signal)
 
     M = signal.shape[1]
-    dft_matrix = linalg.dft(M)
+    dft_matrix = create_dft_matrix(M)
     fourier_matrix = np.dot(dft_matrix, fourier_matrix.T).T
     return fourier_matrix
 
 def IDFT(fourier_signal):
     N = fourier_signal.shape[0]
-    dft_matrix = linalg.inv(linalg.dft(N))
+    dft_matrix = linalg.inv(create_dft_matrix(N))
     fourier_matrix = np.dot(dft_matrix, fourier_signal)
 
     M = fourier_signal.shape[1]
-    dft_matrix = linalg.inv(linalg.dft(M))
+    dft_matrix = linalg.inv(create_dft_matrix(M))
     fourier_matrix = np.dot(dft_matrix, fourier_matrix.T).T
     return fourier_matrix
 
@@ -35,17 +72,15 @@ def IDFT2(fourier_image):
 
 
 def conv_der(im):
-    x_kerenl = np.row_stack((np.zeros(DERIVATIVE_KERNEL.shape), DERIVATIVE_KERNEL, np.zeros(DERIVATIVE_KERNEL.shape)))
-    y_kerenl = np.column_stack((np.zeros(DERIVATIVE_KERNEL.shape),
-                                np.reshape(DERIVATIVE_KERNEL, (DERIVATIVE_KERNEL.shape[0], 1)),
-                                np.zeros(DERIVATIVE_KERNEL.shape)))
+    x_kerenl = np.array(DERIVATIVE_KERNEL).reshape(1, DERIVATIVE_KERNEL.size)
+    y_kerenl = x_kerenl.T
 
     dx = sig.convolve2d(im, x_kerenl, mode='same')
     dy = sig.convolve2d(im, y_kerenl, mode='same')
 
     dx = dx.reshape(im.shape)
     dy = dy.reshape(im.shape)
-    magntiatude = np.sqrt(np.square(dx) + np.square(dy))
+    magntiatude = np.sqrt(np.square(np.abs(dx)) + np.square(np.abs(dy)))
 
     return magntiatude.astype(np.float32)
 
@@ -73,25 +108,22 @@ def fourier_der1(im):
     return magntiatude
 
 def fourier_der(im):
-    fourier_im = DFT2(im)
-    fourier_im = np.fft.fftshift(fourier_im)
+    f_im = DFT2(im)
+    # f_im = np.fft.fft2(im)
+    f_im_centered = np.fft.fftshift(f_im)
 
-    u = np.linspace((np.ceil(im.shape[0] / -2)), np.floor((im.shape[0] / 2)),
-                    num=im.shape[0], endpoint=False, dtype=np.int)
+    u = np.arange(np.ceil(im.shape[0] / -2), np.ceil(im.shape[0] / 2)).reshape(im.shape[0], 1)#[:, np.newaxis]#
+    dx = (f_im_centered * u)
+    dx = IDFT2(np.fft.ifftshift(dx))#.real.astype(np.float32)
+    # dx  = IDFT2(dx)
 
-    dx = (fourier_im.T * u).T
-    # dx = np.fft.fftshift(fourier_dx)
-    dx = IDFT2(dx).real.astype(np.float32)
-    
-    v = np.linspace((np.ceil(im.shape[1] / -2)), np.floor((im.shape[1] / 2)),
-                    num=im.shape[1], endpoint=False, dtype=np.int)
-    v = np.reshape(v, (1, v.shape[0]))
-    dy = fourier_im * v
-    # dy = np.fft.fftshift(fourier_dy)
-    dy = IDFT2(dy).real.astype(np.float32)
-    # show_plot(np.log(1 + np.abs(dx)))
-    # show_plot(np.log(1+np.abs(dy)))
-    magntiatude = np.sqrt(np.abs(dx) ** 2 + np.abs(dy) ** 2).real.astype(np.float32)
+    v = np.arange(np.ceil(im.shape[1] / -2), np.floor(im.shape[1] / 2))#[:, np.newaxis]#.reshape(1, im.shape[1])
+    dy = f_im_centered * v
+    dy = IDFT2(np.fft.ifftshift(dy))#.real.astype(np.float32)
+    # dy = IDFT2(dy)
+    # dx = dx * 2J * np.pi / im.shape[0]
+    # dy = dy * 2J * np.pi / im.shape[1]
+    magntiatude = np.sqrt(np.abs(dx) ** 2 + np.abs(dy) ** 2)#.real.astype(np.float32)
     # imsave(os.getcwd() + '/fourier_x_derivative.jpg', dx)
     # imsave(os.getcwd() + '/fourier_y_derivative.jpg', dy)
     # imsave(os.getcwd() + '/fourier_magnitude.jpg', magntiatude)
@@ -105,7 +137,7 @@ def create_kernel(size):
     kernel = sig.convolve2d(kernel, kernel.T)
 
     total_kernel = np.sum(kernel)
-    kernel = kernel.astype(np.float32) / total_kernel
+    # kernel = kernel.astype(np.float32) / total_kernel
     return kernel
 
 def blur_spatial(im, kernel_size):
@@ -129,6 +161,3 @@ def blur_fourier(im, kernel_size):
     blur_im = IDFT2(fourier_blur)
     return blur_im.real.astype(np.float32)
 
-def show_plot(s_im):
-    plt.imshow(s_im, plt.cm.gray)
-    plt.show()

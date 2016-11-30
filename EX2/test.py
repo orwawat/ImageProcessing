@@ -4,9 +4,11 @@ from skimage import color
 import sol2 as mySol
 import matplotlib.pyplot as plt
 from scipy.misc import imread as imread, imsave as imsave
+from scipy import linalg
 
 vec = np.array([1,2,3,12,14,0,250,82])
-IM_NAME = 'low contrast.jpg'
+IM_NAME = 'jerusalem.jpg'
+
 def test_DFT():
     print("************* Start test_DFT: *************")
     # Create 1D array
@@ -135,15 +137,18 @@ def test_conv_der():
     plt.show()
 
 def test_fourier_der():
+    print("************* Start test_fourier_der: *************")
     im = read_gray_im()
-    der_im = mySol.fourier_der1(im)
-    imsave(os.getcwd() + '/results' + '/111fourier_der_' + IM_NAME, der_im)
+    der_im = mySol.fourier_der(im)
+    imsave(os.getcwd() + '/results' + '/fourier_der_' + IM_NAME, der_im)
     plt.imshow(der_im, plt.cm.gray)
     plt.show()
+    # plt.imshow(np.log(1+np.abs(der_im)) , plt.cm.gray)
+    # plt.show()
 
 def test_create_kernel():
     print("************* Start test_create_kernel: *************")
-    ker_size = 3
+    ker_size = 5
     kernel = mySol.create_kernel(ker_size)
     if np.sum(kernel) != 1:
         print("kernel sum should be 1")
@@ -157,15 +162,16 @@ def test_blur_spatial():
     blur_im = mySol.blur_spatial(im, ker_size)
     show_plot(im)
     # show_plot(blur_im)
-    imsave('C:\\Users\\Alon\\Documents\\HUJI\\ImageProcessing\\Exercises\\EX2\\blur_im.jpg', blur_im)
+    imsave(os.getcwd() + '/results' + '/blur_' + IM_NAME, blur_im)
 
 def test_blur_fourier():
-    ker_size = 3
+    ker_size = 7
     im = read_gray_im()
     blur_im = mySol.blur_fourier(im, ker_size)
     # show_plot(im)
-    # show_plot(blur_im)
-    imsave('C:\\Users\\Alon\\Documents\\HUJI\\ImageProcessing\\Exercises\\EX2\\blur_fourier.jpg', blur_im)
+    show_plot(blur_im)
+    # imsave('C:\\Users\\Alon\\Documents\\HUJI\\ImageProcessing\\Exercises\\EX2\\blur_fourier.jpg', blur_im)
+    imsave(os.getcwd() + '/results' + '/fourier_blur_' + IM_NAME, blur_im)
 
 def compare_blur():
     ker_size = 5
@@ -176,21 +182,50 @@ def compare_blur():
     # foriur_blur_im = np.round(foriur_blur_im, 3)
     # diff= np.subtract(blur_im, foriur_blur_im)
     # indcies = np.nonzero(diff)
-    imsave('C:\\Users\\Alon\\Documents\\HUJI\\ImageProcessing\\Exercises\\EX2\\blur_fourier1.jpg', foriur_blur_im)
-    imsave('C:\\Users\\Alon\\Documents\\HUJI\\ImageProcessing\\Exercises\\EX2\\blur_im1.jpg', blur_im)
+
+    imsave(os.getcwd() + '/results' + '/cmp_fourier_blur_' + IM_NAME, foriur_blur_im)
+    imsave(os.getcwd() + '/results' + '/cmp_blur_' + IM_NAME, blur_im)
     print(np.allclose(blur_im, foriur_blur_im))
 
 
-test_IDFT()
-test_DFT()
-test_DFT_ON_IDFT()
-test_DFT2()
-test_IDFT2()
-test_DFT2_ON_IDFT2()
+
+def test_dft_matrix():
+    print("************* Start test_dft_matrix: *************")
+    size = 4
+    correctVal = linalg.dft(size)
+    myVal = mySol.create_dft_matrix(size)
+
+    if np.allclose(myVal, correctVal):
+        print("VVVVVVVVVVV passed test_dft_matrix VVVVVVVVVVVVVVV\n")
+    else:
+        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+        print("Failed test_dft_matrix")
+        print("My result is: ", myVal)
+        print("Correct Result is: ", correctVal)
+        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+
+
+'''
+a = np.array([[1,2,3], [4,5,6]])
+b = np.array([0,1,2]).reshape(1,3)
+print(a)
+print("\n")
+print(b)
+print("\n")
+print(a * b)
+'''
+
+# test_IDFT()
+# test_DFT()
+# test_DFT_ON_IDFT()
+# test_DFT2()
+# test_IDFT2()
+# test_DFT2_ON_IDFT2()
 # test_conv_der()
-# test_fourier_der()
+test_fourier_der()
 # test_create_kernel()
 # test_blur_spatial()
 # test_blur_fourier()
 # compare_blur()
+# test_dft_matrix()
 a = 76
