@@ -137,7 +137,7 @@ def create_kernel(size):
     kernel = sig.convolve2d(kernel, kernel.T)
 
     total_kernel = np.sum(kernel)
-    # kernel = kernel.astype(np.float32) / total_kernel
+    kernel = kernel.astype(np.float32) / total_kernel
     return kernel
 
 def blur_spatial(im, kernel_size):

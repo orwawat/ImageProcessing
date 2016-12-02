@@ -97,9 +97,10 @@ def histogram_equalize(im_orig):
         bw_im = yiq_im[:, :, 0]
 
     hist_orig, bin_edges = np.histogram(bw_im, bins=MAX_COLOR + 1, range=(0, 1))
+    hist_orig[0] = 50
     sumHist = np.cumsum(hist_orig)
 
-    sumHist = (sumHist / (bw_im.shape[0] * bw_im.shape[1]) * MAX_COLOR).astype(np.float32)
+    sumHist = (sumHist / (50 + bw_im.shape[0] * bw_im.shape[1]) * MAX_COLOR).astype(np.float32)
     minGray = sumHist.item(np.nonzero(sumHist)[0][0])
 
     # Starch the look up table
@@ -218,3 +219,6 @@ def quantize(im_orig, n_quant, n_iter):
         im_quant = convertYChannelToRgb(yiq_im, im_quant)
 
     return [im_quant, error]
+
+
+histogram_equalize(read_image('./color.jpg', 1))
