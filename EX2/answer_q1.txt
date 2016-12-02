@@ -1,0 +1,2 @@
+When we are in Fourier representation the image is "infinite" (because of fourier proprieties),
+So at the edges in fourier we use "wrap" method, and in the image space we don't
