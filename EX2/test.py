@@ -7,7 +7,7 @@ from scipy.misc import imread as imread, imsave as imsave
 from scipy import linalg
 
 vec = np.array([1,2,3,12,14,0,250,82])
-IM_NAME = 'jerusalem.jpg'
+IM_NAME = 'high_res.jpg'
 
 def test_DFT():
     print("************* Start test_DFT: *************")
@@ -125,8 +125,8 @@ def read_gray_im():
     im_float /= 255
     im_gray = color.rgb2gray(im_float)
     im_gray = im_gray.astype(np.float32)
-    plt.imshow(im_gray, plt.cm.gray)
-    plt.show()
+    # plt.imshow(im_gray, plt.cm.gray)
+    # plt.show()
     return im_gray
 
 def test_conv_der():
@@ -157,14 +157,16 @@ def test_create_kernel():
 
 
 def test_blur_spatial():
+    print("************* Start test_blur_spatial: *************")
     ker_size = 5
     im = read_gray_im()
     blur_im = mySol.blur_spatial(im, ker_size)
     show_plot(im)
-    # show_plot(blur_im)
+    show_plot(blur_im)
     imsave(os.getcwd() + '/results' + '/blur_' + IM_NAME, blur_im)
 
 def test_blur_fourier():
+    print("************* Start test_blur_fourier: *************")
     ker_size = 7
     im = read_gray_im()
     blur_im = mySol.blur_fourier(im, ker_size)
@@ -174,6 +176,7 @@ def test_blur_fourier():
     imsave(os.getcwd() + '/results' + '/fourier_blur_' + IM_NAME, blur_im)
 
 def compare_blur():
+    print("************* Start test_compare_blur: *************")
     ker_size = 5
     im = read_gray_im()
     blur_im = mySol.blur_spatial(im, ker_size)
@@ -183,9 +186,19 @@ def compare_blur():
     # diff= np.subtract(blur_im, foriur_blur_im)
     # indcies = np.nonzero(diff)
 
+
     imsave(os.getcwd() + '/results' + '/cmp_fourier_blur_' + IM_NAME, foriur_blur_im)
     imsave(os.getcwd() + '/results' + '/cmp_blur_' + IM_NAME, blur_im)
-    print(np.allclose(blur_im, foriur_blur_im))
+    result = np.allclose(blur_im, foriur_blur_im)
+    if (result):
+        print("VVVVVVVVVVV passed test_compare_blur VVVVVVVVVVVVVVV\n")
+    else:
+        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+        print("Failed test_compare_blur")
+        print("plots fourier image and than regluer image")
+        show_plot(foriur_blur_im)
+        show_plot(blur_im)
+        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
 
 
 
@@ -228,4 +241,4 @@ test_fourier_der()
 # test_blur_fourier()
 # compare_blur()
 # test_dft_matrix()
-a = 76
+# a = 76

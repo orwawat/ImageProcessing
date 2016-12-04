@@ -49,26 +49,24 @@ def DFT(signal):
     dft_matrix = create_dft_matrix(N)
     fourier_matrix = np.dot(dft_matrix, signal)
 
-    M = signal.shape[1]
-    dft_matrix = create_dft_matrix(M)
-    fourier_matrix = np.dot(dft_matrix, fourier_matrix.T).T
     return fourier_matrix
 
 def IDFT(fourier_signal):
     N = fourier_signal.shape[0]
-    dft_matrix = linalg.inv(create_dft_matrix(N))
+    dft_matrix = linalg.inv(create_dft_matrix(N)) # the inv will divide by N
     fourier_matrix = np.dot(dft_matrix, fourier_signal)
 
-    M = fourier_signal.shape[1]
-    dft_matrix = linalg.inv(create_dft_matrix(M))
-    fourier_matrix = np.dot(dft_matrix, fourier_matrix.T).T
     return fourier_matrix
 
 def DFT2(image):
-    return DFT(image)
+    row_fourier = DFT(image)
+    fourier_im = DFT(row_fourier.T).T
+    return fourier_im
 
 def IDFT2(fourier_image):
-    return IDFT(fourier_image)
+    row_im = IDFT(fourier_image)
+    im = IDFT(row_im.T).T
+    return im
 
 
 def conv_der(im):
@@ -85,52 +83,25 @@ def conv_der(im):
     return magntiatude.astype(np.float32)
 
 
-def fourier_der1(im):
-    fourier_im = DFT2(im)
-    fourier_im = np.fft.fftshift(fourier_im)
-
-    u = np.linspace((np.ceil(im.shape[1] / -2)), np.floor((im.shape[1] / 2)),
-                    num=im.shape[1], endpoint=False, dtype=np.int)
-    uMatrix, ua = np.meshgrid(u, np.arange(im.shape[0]))
-
-    v = np.linspace((np.ceil(im.shape[0] / -2)), np.floor((im.shape[0] / 2)),
-                    num=im.shape[0], endpoint=False, dtype=np.int)
-    vMatrix, va = np.array(np.meshgrid(v, np.arange(im.shape[1])))#.reshape((2, im.shape[1]))
-
-    dx = IDFT2(fourier_im * uMatrix * ua).real.astype(np.float32)
-
-    dy = IDFT2(fourier_im * (vMatrix * va).T).real.astype(np.float32)
-    magntiatude = np.sqrt(np.abs(dx) ** 2 + np.abs(dy) ** 2).real.astype(np.float32)
-    # imsave(os.getcwd() + '/fourier_x_derivative.jpg', dx)
-    # imsave(os.getcwd() + '/fourier_y_derivative.jpg', dy)
-    # imsave(os.getcwd() + '/fourier_magnitude1.jpg', magntiatude)
-    # imsave(os.getcwd() + '/fourier_magnitude2.jpg', magntiatude[:,:,1])
-    return magntiatude
-
 def fourier_der(im):
     f_im = DFT2(im)
     # f_im = np.fft.fft2(im)
     f_im_centered = np.fft.fftshift(f_im)
 
-    u = np.arange(np.ceil(im.shape[0] / -2), np.ceil(im.shape[0] / 2)).reshape(im.shape[0], 1)#[:, np.newaxis]#
-    dx = (f_im_centered * u)
-    dx = IDFT2(np.fft.ifftshift(dx))#.real.astype(np.float32)
-    # dx  = IDFT2(dx)
+    u = np.arange(np.ceil(im.shape[0] / -2), np.ceil(im.shape[0] / 2))  .reshape(im.shape[0], 1)
+    dx = (f_im_centered * u * np.exp(2 * np.pi * u / (im.shape[1] * im.shape[0])))
+    dx = IDFT2(np.fft.ifftshift(dx))
 
-    v = np.arange(np.ceil(im.shape[1] / -2), np.floor(im.shape[1] / 2))#[:, np.newaxis]#.reshape(1, im.shape[1])
-    dy = f_im_centered * v
-    dy = IDFT2(np.fft.ifftshift(dy))#.real.astype(np.float32)
-    # dy = IDFT2(dy)
-    # dx = dx * 2J * np.pi / im.shape[0]
-    # dy = dy * 2J * np.pi / im.shape[1]
-    magntiatude = np.sqrt(np.abs(dx) ** 2 + np.abs(dy) ** 2)#.real.astype(np.float32)
-    # imsave(os.getcwd() + '/fourier_x_derivative.jpg', dx)
-    # imsave(os.getcwd() + '/fourier_y_derivative.jpg', dy)
-    # imsave(os.getcwd() + '/fourier_magnitude.jpg', magntiatude)
+    v = np.arange(np.ceil(im.shape[1] / -2), np.ceil(im.shape[1] / 2))
+    dy = (f_im_centered * v)
+    dy = IDFT2(np.fft.ifftshift(dy))
+    dx = dx * 2J * np.pi / (im.shape[0] * im.shape[1])
+    dy = dy * 2J * np.pi / (im.shape[0] * im.shape[1])
+    magntiatude = np.sqrt(np.abs(dx) ** 2 + np.abs(dy) ** 2)
     return magntiatude
 
 def create_kernel(size):
-    kernel = base_kernel = np.array([[1, 1]])
+    kernel = base_kernel = np.array([[1, 1]], dtype=np.int64)
 
     for i in range(size - 2):
         kernel = sig.convolve2d(base_kernel, kernel)
@@ -148,11 +119,13 @@ def blur_spatial(im, kernel_size):
 def blur_fourier(im, kernel_size):
     fourier_im = DFT2(im)
 
+    current_kernel = int(create_kernel(kernel_size))
     kernel = np.zeros(shape=im.shape)
     kernel_location = (np.floor(im.shape[0] / 2) - np.floor(kernel_size / 2),
                        np.floor(im.shape[1] / 2 - np.floor(kernel_size / 2)))
-    kernel[kernel_location[0]: kernel_location[0] + kernel_size, kernel_location[1]: kernel_location[1] + kernel_size] \
-        = create_kernel(kernel_size)
+    kernel[kernel_location[0]: kernel_location[0] + int(kernel_size), \
+            kernel_location[1]: kernel_location[1] + int(kernel_size)] \
+        = current_kernel
 
     kernel = np.fft.ifftshift(kernel)
     fourier_kernel = DFT2(kernel)
