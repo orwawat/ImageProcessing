@@ -1,2 +1,2 @@
-When we are in Fourier representation the image is "infinite" (because of fourier proprieties),
-So at the edges in fourier we use "wrap" method, and in the image space we don't
+In the image space we use an approximation of the dervative (we switched epsilon by 1), and in fourier we calculated the derivative directly according to the definition.
+ 

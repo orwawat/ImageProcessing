@@ -40,14 +40,14 @@ def read_image(filename, representation):
     return returnImage
 
 def create_dft_matrix(size):
-    u, x = np.meshgrid(np.arange(size), np.arange(size))
-    omega = np.exp(-2J * np.pi / size)
-    return np.power(omega, u * x)
+    vec = np.arange(size)
+    line = np.array(np.exp(-2 * np.pi * 1J * vec / size))
+    return np.vander(line, N=size, increasing=True)
 
 def DFT(signal):
     N = signal.shape[0]
     dft_matrix = create_dft_matrix(N)
-    fourier_matrix = np.dot(dft_matrix, signal)
+    fourier_matrix = dft_matrix.dot(signal)
 
     return fourier_matrix
 
@@ -85,20 +85,20 @@ def conv_der(im):
 
 def fourier_der(im):
     f_im = DFT2(im)
-    # f_im = np.fft.fft2(im)
     f_im_centered = np.fft.fftshift(f_im)
 
-    u = np.arange(np.ceil(im.shape[0] / -2), np.ceil(im.shape[0] / 2))  .reshape(im.shape[0], 1)
-    dx = (f_im_centered * u * np.exp(2 * np.pi * u / (im.shape[1] * im.shape[0])))
+    u = np.arange(np.ceil(im.shape[0] / -2), np.ceil(im.shape[0] / 2)).reshape(im.shape[0], 1)
+    dx = f_im_centered * u
     dx = IDFT2(np.fft.ifftshift(dx))
+    dx = dx * 2J * np.pi / im.shape[0]
 
     v = np.arange(np.ceil(im.shape[1] / -2), np.ceil(im.shape[1] / 2))
     dy = (f_im_centered * v)
     dy = IDFT2(np.fft.ifftshift(dy))
-    dx = dx * 2J * np.pi / (im.shape[0] * im.shape[1])
-    dy = dy * 2J * np.pi / (im.shape[0] * im.shape[1])
+    dy = dy * 2J * np.pi / im.shape[1]
+
     magntiatude = np.sqrt(np.abs(dx) ** 2 + np.abs(dy) ** 2)
-    return magntiatude
+    return magntiatude.astype(np.float32)
 
 def create_kernel(size):
     kernel = base_kernel = np.array([[1, 1]], dtype=np.int64)
@@ -119,18 +119,17 @@ def blur_spatial(im, kernel_size):
 def blur_fourier(im, kernel_size):
     fourier_im = DFT2(im)
 
-    current_kernel = int(create_kernel(kernel_size))
+    current_kernel = create_kernel(kernel_size)
     kernel = np.zeros(shape=im.shape)
-    kernel_location = (np.floor(im.shape[0] / 2) - np.floor(kernel_size / 2),
-                       np.floor(im.shape[1] / 2 - np.floor(kernel_size / 2)))
+    kernel_location = (int(np.floor(im.shape[0] / 2) - np.floor(kernel_size / 2)),
+                       int(np.floor(im.shape[1] / 2 - np.floor(kernel_size / 2))))
+
     kernel[kernel_location[0]: kernel_location[0] + int(kernel_size), \
             kernel_location[1]: kernel_location[1] + int(kernel_size)] \
         = current_kernel
 
     kernel = np.fft.ifftshift(kernel)
     fourier_kernel = DFT2(kernel)
-
-    fourier_blur = fourier_im * fourier_kernel
+    fourier_blur = np.multiply(fourier_kernel, fourier_im)
     blur_im = IDFT2(fourier_blur)
-    return blur_im.real.astype(np.float32)
-
+    return np.real(blur_im).astype(np.float32)

@@ -1,0 +1,4 @@
+When not centering the kernel the image "splits" into 4 partial images that are placed together.
+I am not sure what is the reason we get exactly this structure of images, but the difference is because the phase in the fourior space.
+
+When calculating the magnitude we will get exactly the same in both cases but the phase will differ, and when going back to the image space we use the phase.

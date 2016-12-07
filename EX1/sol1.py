@@ -2,7 +2,7 @@ import numpy as np
 from scipy.misc import imread as imread, imsave as imsave
 import matplotlib.pyplot as plt
 from skimage import data, io, filters, color
-
+from scipy import signal as sig
 
 MAX_COLOR = 255
 class RgbYiqConverter:
@@ -97,10 +97,9 @@ def histogram_equalize(im_orig):
         bw_im = yiq_im[:, :, 0]
 
     hist_orig, bin_edges = np.histogram(bw_im, bins=MAX_COLOR + 1, range=(0, 1))
-    hist_orig[0] = 50
     sumHist = np.cumsum(hist_orig)
 
-    sumHist = (sumHist / (50 + bw_im.shape[0] * bw_im.shape[1]) * MAX_COLOR).astype(np.float32)
+    sumHist = (sumHist / (bw_im.shape[0] * bw_im.shape[1]) * MAX_COLOR).astype(np.float32)
     minGray = sumHist.item(np.nonzero(sumHist)[0][0])
 
     # Starch the look up table
@@ -221,4 +220,40 @@ def quantize(im_orig, n_quant, n_iter):
     return [im_quant, error]
 
 
-histogram_equalize(read_image('./color.jpg', 1))
+im = np.zeros(shape=(256,256))
+for i in range(0,256):
+    for j in range(0,256):
+        im[i,j] = np.cos(2 * np.pi * (4*i + 4*j) / 256)
+
+def create_kernel(size):
+    kernel = base_kernel = np.array([[1, 1]])
+
+    for i in range(size - 2):
+        kernel = sig.convolve2d(base_kernel, kernel)
+    kernel = sig.convolve2d(kernel, kernel.T)
+
+    total_kernel = np.sum(kernel)
+    kernel = kernel.astype(np.float32) / total_kernel
+    return kernel
+
+
+im = read_image('./a1.jpg', 1)
+kernel = create_kernel(5)
+im_der = sig.convolve2d(im, kernel, mode='same')
+# der_ker = sig.convolve2d([[0,1, 0] , [1,0,-1], [0,-1,0]], np.array([[0,1, 0] , [1,0,-1], [0,-1,0]]).T)
+# print(der_ker)
+x_kerenl = np.array([1,-2,1]).reshape(3, 1)
+im_der = sig.convolve2d(im_der, x_kerenl, mode='same')
+# im_der = np.convolve(im_der, x_kernel, mode='same')
+plt.imshow(im, plt.cm.gray)
+plt.show()
+plt.imshow(im - im_der, plt.cm.gray)
+plt.show()
+# minGray = im[np.nonzero(im)[0][0]]
+# im = np.round(MAX_COLOR * (im - minGray) / (im[MAX_COLOR] - minGray))
+# bw_im_eq, hist_orig, hist_eq = histog   ram_equalize(im)
+#
+# plt.imshow(bw_im_eq, plt.cm.gray)
+# plt.show()
+# plt.plot(hist_eq)
+# plt.show()
