@@ -43,8 +43,8 @@ def test_build_gaussian_pyramid():
 
 def test_build_laplacian_pyramid():
     im = get_image()
-    max_levels = 3
-    filter_size = 3
+    max_levels = 10
+    filter_size = 9
 
     pyr, filter_vec = mySol.build_laplacian_pyramid(im, max_levels, filter_size)
     if (len(filter_vec) != filter_size):
@@ -69,7 +69,8 @@ def test_laplacian_to_image():
     show_plot(actualIm)
     if not np.array_equal(actualIm, im):
         print("XXXXXXXXXXXXXXX pyramid recoustraction is wrong XXXXXXXXXXXXXXXXxx")
-
+    else:
+        print("VVVVVVVVVVVVVVVvv pyramid recoustraction is GOOOOOOOOD VVVVVVVVVVVVVVVVVVVV")
 def test_sub_sample():
     array = np.array([[1, 2, 3, 4], [4, 5, 6, 7], [8, 9, 10, 11]])
     expectedArray = np.array([[1, 3], [8, 10]])
@@ -141,7 +142,6 @@ def test_reduce():
     show_plot(im)
     show_plot(im_small)
     print(im.shape[0] == im_small.shape[0] * 2 and im.shape[1] == im_small.shape[1] * 2)
-
 
 # test_build_gaussian_pyramid()
 # test_build_laplacian_pyramid()
