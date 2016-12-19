@@ -7,7 +7,7 @@ from scipy.misc import imread as imread, imsave as imsave
 from scipy import linalg
 
 vec = np.array([1,2,3,12,14,0,250,82])
-IM_NAME = 'jerusalem.jpg'
+IM_NAME = 'monkey.jpg'
 
 def test_DFT():
     print("************* Start test_DFT: *************")
@@ -179,7 +179,7 @@ def test_blur_spatial():
 
 def test_blur_fourier():
     print("************* Start test_blur_fourier: *************")
-    ker_size = 3
+    ker_size = 5
     im = read_gray_im()
     blur_im = mySol.blur_fourier(im, ker_size)
     # show_plot(im)
@@ -242,19 +242,25 @@ print("\n")
 print(a * b)
 '''
 
-test_IDFT()
-test_DFT()
-test_DFT_ON_IDFT()
-test_DFT2()
-test_IDFT2()
-test_DFT2_ON_IDFT2()
-test_fourier_der()
-test_conv_der()
-test_der()
-test_create_kernel()
-test_blur_spatial()
+# test_IDFT()
+# test_DFT()
+# test_DFT_ON_IDFT()
+# test_DFT2()
+# test_IDFT2()
+# test_DFT2_ON_IDFT2()
+# test_fourier_der()
+# test_conv_der()
+# test_der()
+# test_create_kernel()
+# test_blur_spatial()
 test_blur_fourier()
-compare_blur()
-test_dft_matrix()
+# compare_blur()
+# test_dft_matrix()
 # a = 76
 # mySol.create_dft_matrix(25)
+
+
+# a = np.vander(np.arange(5))
+# print(a)
+# b = linalg.inv(a)
+# print(b)

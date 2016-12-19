@@ -1,5 +1,10 @@
 From the convolution theorem both images suppose to be the same.
 
-But as we remember the Fourier is infinite, so when doing convolution on the edge we use "the other side" of the image (just the next image)
-When we are doing convolution in the regular space, there nothing after the last row/column, so we need to decide how to do it (the signal.convolve2d get it as a parameter), if we choose 'wrap' we will get exactly the same image as in the Fourier space, if we use a different method we will get different values.
-But still, the difference will be only in the first/last KERNEL_SIZE rows/columns (where kernel size is the size of the kernel we are using to do the blur)
+But as we remember the Fourier is infinite, so when doing convolution on the edge we 
+use "the other side" of the image (just the next image)
+When we are doing convolution in the regular space, there nothing after the last 
+row/column, so we need to decide how to do it (the signal.convolve2d get it 
+as a parameter), if we choose 'wrap' we will get exactly the same image as in the 
+Fourier space, if we use a different method we will get different values.
+But still, the difference will be only in the first/last KERNEL_SIZE rows/columns 
+(where kernel size is the size of the kernel we are using to do the blur)

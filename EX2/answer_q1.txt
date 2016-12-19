@@ -1,2 +1,4 @@
-In the image space we use an approximation of the dervative (we switched epsilon by 1), and in fourier we calculated the derivative directly according to the definition.
+In the image space we use an approximation of the dervative 
+(we switched epsilon by 1), and in fourier we calculated the derivative directly 
+according to the definition.
  
