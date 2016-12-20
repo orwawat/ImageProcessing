@@ -9,14 +9,16 @@ IM_NAME = 'monkey.jpg'
 
 
 def get_image():
-    im = imread(".//images//" + IM_NAME)
+    return get_specific_image(IM_NAME)
+
+def get_specific_image(name):
+    im = imread(".//images//" + name)
 
     im_gray = color.rgb2gray(im)
     im_gray = im_gray.astype(np.float32)
     # plt.imshow(im_gray, plt.cm.gray)
     # plt.show()
     return im_gray
-
 
 def show_plot(s_im):
     plt.imshow(s_im, plt.cm.gray)
@@ -41,6 +43,7 @@ def test_build_gaussian_pyramid():
     if (pyr[-1].shape[0] < 16 or pyr[-1].shape[1] < 16):
         print("XXXXXXXXXXXXXXX pyrmaid smallest resloution is wrong XXXXXXXXXXXXXXXXxx")
 
+
 def test_build_laplacian_pyramid():
     im = get_image()
     max_levels = 10
@@ -59,6 +62,7 @@ def test_build_laplacian_pyramid():
     if (pyr[-1].shape[0] < 16 or pyr[-1].shape[1] < 16):
         print("XXXXXXXXXXXXXXX pyrmaid smallest resloution is wrong XXXXXXXXXXXXXXXXxx")
 
+
 def test_laplacian_to_image():
     im = get_image()
     max_levels = 3
@@ -71,6 +75,8 @@ def test_laplacian_to_image():
         print("XXXXXXXXXXXXXXX pyramid recoustraction is wrong XXXXXXXXXXXXXXXXxx")
     else:
         print("VVVVVVVVVVVVVVVvv pyramid recoustraction is GOOOOOOOOD VVVVVVVVVVVVVVVVVVVV")
+
+
 def test_sub_sample():
     array = np.array([[1, 2, 3, 4], [4, 5, 6, 7], [8, 9, 10, 11]])
     expectedArray = np.array([[1, 3], [8, 10]])
@@ -134,6 +140,18 @@ def test_blur_im():
         show_plot(actual_im)
         print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
 
+
+def test_blend():
+    im1 = get_specific_image('car.jpg')
+    im2 = get_specific_image('ball.jpg')
+    mask = get_specific_image('car_mask.jpg')
+    max_level = 3
+    filter_size_im = 3
+    filter_size_mask = 1
+
+    blended = mySol.pyramid_blending(im1, im2, mask, max_level, filter_size_im, filter_size_mask)
+    show_plot(blended)
+
 def test_reduce():
     kernel_size = 3
     im = get_image()
@@ -143,9 +161,25 @@ def test_reduce():
     show_plot(im_small)
     print(im.shape[0] == im_small.shape[0] * 2 and im.shape[1] == im_small.shape[1] * 2)
 
+
+def test_display_pyramid():
+    im = get_image()
+    max_level = 6
+    filter_size = 5
+    pyr, filter_vec = mySol.build_gaussian_pyramid(im, max_level, filter_size)
+    mySol.display_pyramid(pyr, len(pyr) -1)
+
+    pyr, filter_vec = mySol.build_laplacian_pyramid(im, max_level, filter_size)
+    mySol.display_pyramid(pyr,len(pyr))
+
+
+
+mySol.blending_example1()
+# test_blend()
+# test_display_pyramid()
 # test_build_gaussian_pyramid()
 # test_build_laplacian_pyramid()
-test_laplacian_to_image()
+# test_laplacian_to_image()
 # test_create_kernel()
 # test_sub_sample()
 # test_zero_padding()
