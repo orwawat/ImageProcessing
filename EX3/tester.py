@@ -1,15 +1,16 @@
 import sol3 as mySol
 import numpy as np
 from scipy import signal as sig
-from scipy.misc import imread as imread
+from scipy.misc import imread, imsave
 from skimage import color
 import matplotlib.pyplot as plt
 
-IM_NAME = 'monkey.jpg'
+IM_NAME = 'lena.jpg'
 
 
 def get_image():
     return get_specific_image(IM_NAME)
+
 
 def get_specific_image(name):
     im = imread(".//images//" + name)
@@ -19,6 +20,7 @@ def get_specific_image(name):
     # plt.imshow(im_gray, plt.cm.gray)
     # plt.show()
     return im_gray
+
 
 def show_plot(s_im):
     plt.imshow(s_im, plt.cm.gray)
@@ -46,7 +48,7 @@ def test_build_gaussian_pyramid():
 
 def test_build_laplacian_pyramid():
     im = get_image()
-    max_levels = 10
+    max_levels = 5
     filter_size = 9
 
     pyr, filter_vec = mySol.build_laplacian_pyramid(im, max_levels, filter_size)
@@ -65,12 +67,14 @@ def test_build_laplacian_pyramid():
 
 def test_laplacian_to_image():
     im = get_image()
-    max_levels = 3
+    max_levels = 5
     filter_size = 3
+    cofee = [0.5, 1, 1, 1, 1]
     pyr, filter_vec = mySol.build_laplacian_pyramid(im, max_levels, filter_size)
-    actualIm = mySol.laplacian_to_image(pyr, filter_vec, np.ones(len(pyr)))
+    actualIm = mySol.laplacian_to_image(pyr, filter_vec, cofee)
 
-    show_plot(actualIm)
+    mySol.display_pyramid([im, actualIm], 2)
+    # show_plot(actualIm)
     if not np.array_equal(actualIm, im):
         print("XXXXXXXXXXXXXXX pyramid recoustraction is wrong XXXXXXXXXXXXXXXXxx")
     else:
@@ -94,7 +98,7 @@ def test_sub_sample():
 def test_zero_padding():
     array = np.array([[1, 2, 3, 4], [4, 5, 6, 7]])
     expectedArray = np.array([[1, 0, 2, 0, 3, 0, 4], [0, 0, 0, 0, 0, 0, 0], [4, 0, 5, 0, 6, 0, 7]])
-    actualArray = mySol.zeroPadding(array)
+    actualArray = mySol.zeroPadding(array, expectedArray.shape)
     if np.array_equal(expectedArray, actualArray):
         print("VVVVVVVVVVV passed test_sub_sample VVVVVVVVVVVVVVV\n")
     else:
@@ -152,6 +156,7 @@ def test_blend():
     blended = mySol.pyramid_blending(im1, im2, mask, max_level, filter_size_im, filter_size_mask)
     show_plot(blended)
 
+
 def test_reduce():
     kernel_size = 3
     im = get_image()
@@ -162,26 +167,49 @@ def test_reduce():
     print(im.shape[0] == im_small.shape[0] * 2 and im.shape[1] == im_small.shape[1] * 2)
 
 
+def test_readce_expand():
+    im = get_image()
+    kernel_size = 5
+    im_small = mySol.reduce(im, kernel_size)
+    im_expanded = mySol.expand(im_small, mySol.create_kernel(kernel_size), im.shape)
+
+    mySol.display_pyramid([im, im_expanded, im_small], 3)
+
+
 def test_display_pyramid():
     im = get_image()
     max_level = 6
     filter_size = 5
     pyr, filter_vec = mySol.build_gaussian_pyramid(im, max_level, filter_size)
-    mySol.display_pyramid(pyr, len(pyr) -1)
+    mySol.display_pyramid(pyr, len(pyr) - 1)
 
     pyr, filter_vec = mySol.build_laplacian_pyramid(im, max_level, filter_size)
-    mySol.display_pyramid(pyr,len(pyr))
+    mySol.display_pyramid(pyr, len(pyr))
 
 
-
+test_readce_expand()
 mySol.blending_example1()
-# test_blend()
-# test_display_pyramid()
-# test_build_gaussian_pyramid()
-# test_build_laplacian_pyramid()
-# test_laplacian_to_image()
-# test_create_kernel()
-# test_sub_sample()
-# test_zero_padding()
-# test_blur_im()
-# test_reduce()
+mySol.blending_example2()
+test_blend()
+test_display_pyramid()
+test_build_gaussian_pyramid()
+test_build_laplacian_pyramid()
+test_laplacian_to_image()
+test_create_kernel()
+test_sub_sample()
+test_zero_padding()
+test_blur_im()
+test_reduce()
+
+
+# convert mask to bool
+# mask_name = 'shark_mask2.jpg'
+# im = get_specific_image(mask_name)
+# for i in range(im.shape[0]):
+#     for j in range(im.shape[1]):
+#         if im[i, j] >= 0.5:
+#             im[i, j] = 1
+#         else:
+#             im[i, j] = 0
+# im_bool = im.astype(np.bool)
+# imsave(".//images//" + 'bool_' + mask_name, im)

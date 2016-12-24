@@ -5,11 +5,14 @@ from skimage import color
 from scipy.misc import imread as imread
 from os import path
 
+
 def linear_stretch(im):
     # minVal = im[np.nonzero(im)[0]]
     # maxVal = im[np.argmax(im)[0][0]]
-    im_stretch = np.round(255 * (im - 0) / (255 - 0))
-    return im_stretch
+
+    im_stretch = (im - np.nanmin(im)) / (np.nanmax(im) - np.nanmin(im))
+    # im_stretch = np.round(255 * (im - 0) / (255 - 0))
+    return im_stretch.astype(np.float32)
 
 
 def display_pyramid(pyr, levels):
@@ -34,7 +37,7 @@ def render_pyramid(pyr, levels):
 
     current_col = 0
     for i in range(levels):
-        res[0: pyr[i].shape[0], current_col: pyr[i].shape[1] + current_col] = pyr[i]
+        res[0: pyr[i].shape[0], current_col: pyr[i].shape[1] + current_col] = linear_stretch(pyr[i])
         current_col += pyr[i].shape[1]
 
     return res
@@ -44,8 +47,9 @@ def pyramid_blending(im1, im2, mask, max_levels, filter_size_im, filter_size_mas
     l1, filter_vec1 = build_laplacian_pyramid(im1, max_levels, filter_size_im)
     l2, filter_vec2 = build_laplacian_pyramid(im2, max_levels, filter_size_im)
     Gm, filter_vec3 = build_gaussian_pyramid(mask.astype(np.float32), max_levels, filter_size_mask)
+
     lc = []
-    for i in range(min([len(l1), len(l2), len(Gm)])):
+    for i in range(len(l1)):
         lc.append(Gm[i] * l1[i] + (1 - Gm[i]) * l2[i])
 
     return laplacian_to_image(lc, filter_vec1, np.ones((len(lc)))).clip(0, 255)
@@ -57,6 +61,7 @@ def laplacian_to_image(lpyr, filter_vec, coeff):
         cur_im = expand(cur_im, filter_vec, lpyr[-i].shape) + (lpyr[-i] * coeff[-i])
 
     return cur_im
+
 
 
 def build_laplacian_pyramid(im, max_levels, filter_size):
@@ -112,7 +117,7 @@ def zeroPadding(im, new_shape):
 def create_kernel(size):
     kernel = base_kernel = np.array([1, 1], dtype=np.int64)
 
-    if (size == 1):
+    if size == 1:
         return np.array([1])
 
     for i in range(size - 2):
@@ -131,7 +136,7 @@ def read_image(filename, representation):
 
     if representation == 1:
         # Convert to gray
-        if im.shape < 3:
+        if len(im.shape) < 3:
             # Already gray, no need to convert
             returnImage = im_float
         else:
@@ -144,34 +149,52 @@ def read_image(filename, representation):
 
     return returnImage
 
+
 def blend_rgb(im1, im2, mask, max_levels, filter_size_im, filter_size_mask):
     im_blend = np.zeros(shape=im1.shape)
     for i in range(im1.shape[2]):
-        im_blend[:, :, i] = pyramid_blending(im1[:, :, i], im2[:, :, i], mask[:, :, i],
+        im_blend[:, :, i] = pyramid_blending(im1[:, :, i], im2[:, :, i], mask,
                                              max_levels, filter_size_im, filter_size_mask)
     return im_blend
 
 
 def plot_images(im1, im2, mask, im_blend):
     plt.figure()
-    plt.subplot(2,2,1)
+    plt.subplot(2, 2, 1)
     plt.imshow(im1)
-    plt.subplot(2,2,2)
+    plt.subplot(2, 2, 2)
     plt.imshow(im2)
     plt.subplot(2, 2, 3)
-    plt.imshow(mask)
+    plt.imshow(mask, cmap=plt.cm.gray)
     plt.subplot(2, 2, 4)
     plt.imshow(im_blend)
     plt.show()
 
+
 def blending_example1():
-    im1 = read_image(path.realpath("images//car.jpg"), 2)
-    im2 = read_image(path.realpath("images//cent.jpg"), 2)
-    mask = read_image(path.realpath("images//car_mask.jpg"), 2)
+    im1 = read_image(path.realpath("images//sunglasses_reflection.jpg"), 2)
+    im2 = read_image(path.realpath("images//full_moon.jpg"), 2)
+    mask = read_image(path.realpath("images//sunglasses_reflection_mask.jpg"), 1)
+    mask = mask.astype(np.bool)
+
+    max_level = 6
+    filter_size_im = 5
+    filter_size_mask = 11
+
+    im_blend = blend_rgb(im1, im2, mask, max_level, filter_size_im, filter_size_mask)
+    plot_images(im1, im2, mask, im_blend)
+    return im1, im2, mask, im_blend
+
+
+def blending_example2():
+    im1 = read_image(path.realpath("images//shark.jpg"), 2)
+    im2 = read_image(path.realpath("images//fishes.jpg"), 2)
+    mask = read_image(path.realpath("images//shark_mask.jpg"), 1)
+    mask = mask.astype(np.bool)
 
     max_level = 3
-    filter_size_im = 5
-    filter_size_mask = 3
+    filter_size_im = 3
+    filter_size_mask = 7
 
     im_blend = blend_rgb(im1, im2, mask, max_level, filter_size_im, filter_size_mask)
     plot_images(im1, im2, mask, im_blend)
