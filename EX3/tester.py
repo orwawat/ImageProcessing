@@ -187,29 +187,29 @@ def test_display_pyramid():
     mySol.display_pyramid(pyr, len(pyr))
 
 
-test_readce_expand()
-mySol.blending_example1()
+# test_readce_expand()
+# mySol.blending_example1()
 mySol.blending_example2()
-test_blend()
-test_display_pyramid()
-test_build_gaussian_pyramid()
-test_build_laplacian_pyramid()
-test_laplacian_to_image()
-test_create_kernel()
-test_sub_sample()
-test_zero_padding()
-test_blur_im()
-test_reduce()
+# test_blend()
+# test_display_pyramid()
+# test_build_gaussian_pyramid()
+# test_build_laplacian_pyramid()
+# test_laplacian_to_image()
+# test_create_kernel()
+# test_sub_sample()
+# test_zero_padding()
+# test_blur_im()
+# test_reduce()
 
 
 # convert mask to bool
-# mask_name = 'shark_mask2.jpg'
+# mask_name = 'shark_mask.jpg'
 # im = get_specific_image(mask_name)
 # for i in range(im.shape[0]):
 #     for j in range(im.shape[1]):
-#         if im[i, j] >= 0.5:
+#         if im[i, j] > 0:
 #             im[i, j] = 1
 #         else:
 #             im[i, j] = 0
-# im_bool = im.astype(np.bool)
-# imsave(".//images//" + 'bool_' + mask_name, im)
+# # im_bool = im.astype(np.bool)
+# imsave(".//images//" + 'bool_shark_mask.png', im)

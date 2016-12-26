@@ -52,7 +52,7 @@ def pyramid_blending(im1, im2, mask, max_levels, filter_size_im, filter_size_mas
     for i in range(len(l1)):
         lc.append(Gm[i] * l1[i] + (1 - Gm[i]) * l2[i])
 
-    return laplacian_to_image(lc, filter_vec1, np.ones((len(lc)))).clip(0, 255)
+    return laplacian_to_image(lc, filter_vec1, np.ones((len(lc)))).clip(0, 1)
 
 
 def laplacian_to_image(lpyr, filter_vec, coeff):
@@ -94,7 +94,7 @@ def reduce(im, filter_size):
 
 
 def expand(im, filter_vec, new_shape):
-    kernel = filter_vec * 2
+    kernel = filter_vec * 2.0
     return blurIm(zeroPadding(im, new_shape), kernel)
 
 
@@ -131,8 +131,11 @@ def create_kernel(size):
 def read_image(filename, representation):
     im = imread(filename)
     # tokenize
-    im_float = im.astype(np.float32)
-    im_float /= 255
+    if (np.amax(im) > 1):
+        im_float = im.astype(np.float32)
+        im_float /= 255
+    else:
+        im_float = im.astype(np.float32)
 
     if representation == 1:
         # Convert to gray
@@ -174,9 +177,9 @@ def plot_images(im1, im2, mask, im_blend):
 def blending_example1():
     im1 = read_image(path.realpath("images//sunglasses_reflection.jpg"), 2)
     im2 = read_image(path.realpath("images//full_moon.jpg"), 2)
-    mask = read_image(path.realpath("images//sunglasses_reflection_mask.jpg"), 1)
+    mask = read_image(path.realpath("images//sunglasses_reflection_mask.png"), 1)
+    # mask = (mask > 0).astype(np.bool)
     mask = mask.astype(np.bool)
-
     max_level = 6
     filter_size_im = 5
     filter_size_mask = 11
@@ -189,12 +192,12 @@ def blending_example1():
 def blending_example2():
     im1 = read_image(path.realpath("images//shark.jpg"), 2)
     im2 = read_image(path.realpath("images//fishes.jpg"), 2)
-    mask = read_image(path.realpath("images//shark_mask.jpg"), 1)
-    mask = mask.astype(np.bool)
+    mask = read_image(path.realpath("images//shark_mask.png"), 1)
+    mask = (mask > 0).astype(np.bool)
 
     max_level = 3
-    filter_size_im = 3
-    filter_size_mask = 7
+    filter_size_im = 5
+    filter_size_mask = 11
 
     im_blend = blend_rgb(im1, im2, mask, max_level, filter_size_im, filter_size_mask)
     plot_images(im1, im2, mask, im_blend)
