@@ -195,9 +195,9 @@ def blending_example2():
     mask = read_image(path.realpath("images//shark_mask.png"), 1)
     mask = (mask > 0).astype(np.bool)
 
-    max_level = 3
-    filter_size_im = 5
-    filter_size_mask = 11
+    max_level = 5
+    filter_size_im = 13
+    filter_size_mask = 13
 
     im_blend = blend_rgb(im1, im2, mask, max_level, filter_size_im, filter_size_mask)
     plot_images(im1, im2, mask, im_blend)

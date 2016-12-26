@@ -203,7 +203,7 @@ mySol.blending_example2()
 
 
 # convert mask to bool
-# mask_name = 'shark_mask.jpg'
+# mask_name = 'shark_mask.png'
 # im = get_specific_image(mask_name)
 # for i in range(im.shape[0]):
 #     for j in range(im.shape[1]):
