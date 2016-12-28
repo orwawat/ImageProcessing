@@ -67,8 +67,9 @@ def laplacian_to_image(lpyr, filter_vec, coeff):
 def build_laplacian_pyramid(im, max_levels, filter_size):
     guss_pyr, filter_vec = build_gaussian_pyramid(im, max_levels, filter_size)
     lapl_pyr = []
+    ker = create_kernel(filter_size)
     for i in range(len(guss_pyr) - 1):
-        expaned_im = expand(guss_pyr[i + 1], create_kernel(filter_size), guss_pyr[i].shape)
+        expaned_im = expand(guss_pyr[i + 1], ker, guss_pyr[i].shape)
         lapl_pyr.append(guss_pyr[i] - expaned_im)
 
     lapl_pyr.append(guss_pyr[-1])
