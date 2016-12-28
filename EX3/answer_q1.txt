@@ -1,0 +1,6 @@
+The cofee vector controls the intensity of the image.
+when building the laplacien pyramid in each level the frequencies that we will see 
+will be smaller and smaller (we get rid of the details and stay 
+only with the "raw" image).
+
+For example, if we multiply a low level by a number > 1 we will make the "raw" image (the low frequencies ) brighter
