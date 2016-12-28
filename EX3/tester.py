@@ -19,7 +19,7 @@ def get_specific_image(name):
     im_gray = im_gray.astype(np.float32)
     # plt.imshow(im_gray, plt.cm.gray)
     # plt.show()
-    return im_gray
+    return im_gray.astype(np.float32)
 
 
 def show_plot(s_im):
@@ -37,9 +37,9 @@ def test_build_gaussian_pyramid():
         print("XXXXXXXXXXXXXXX pyrmaid filter_ved len is wrong XXXXXXXXXXXXXXXXxx")
     if len(pyr) != max_levels:
         print("XXXXXXXXXXXXXXX pyrmaid length is wrong XXXXXXXXXXXXXXXXxx")
-    for pyr_im in pyr:
-        show_plot(pyr_im)
-
+    # for pyr_im in pyr:
+    #     show_plot(pyr_im)
+    mySol.display_pyramid(pyr, max_levels)
     # make sure the smallest image isn't less than 16
     pyr, filter_vec = mySol.build_gaussian_pyramid(im, 1000, filter_size)
     if (pyr[-1].shape[0] < 16 or pyr[-1].shape[1] < 16):
@@ -56,9 +56,9 @@ def test_build_laplacian_pyramid():
         print("XXXXXXXXXXXXXXX pyramid filter_ved len is wrong XXXXXXXXXXXXXXXXxx")
     if len(pyr) != max_levels:
         print("XXXXXXXXXXXXXXX pyramid length is wrong XXXXXXXXXXXXXXXXxx")
-    for pyr_im in pyr:
-        show_plot(pyr_im)
-
+    # for pyr_im in pyr:
+    #     show_plot(pyr_im)
+    mySol.display_pyramid(pyr, max_levels)
     # make sure the smallest image isn't less than 16
     pyr, filter_vec = mySol.build_gaussian_pyramid(im, 1000, filter_size)
     if (pyr[-1].shape[0] < 16 or pyr[-1].shape[1] < 16):
@@ -69,17 +69,23 @@ def test_laplacian_to_image():
     im = get_image()
     max_levels = 6
     filter_size = 9
-    cofee = [1, 1, 1, 1, 1, 50]
+    cofee = [1, 1, 1, 1, 1, 5]
     # cofee = [2,1,0.5,0.5,0.5,0.5]
     pyr, filter_vec = mySol.build_laplacian_pyramid(im, max_levels, filter_size)
     # mySol.display_pyramid(pyr, max_levels)
     actualIm = mySol.laplacian_to_image(pyr, filter_vec, cofee)
 
-    show_plot(actualIm)
-    # mySol.display_pyramid([im, actualIm], 2)
+    mySol.display_pyramid([im, actualIm], 2)
     # show_plot(actualIm)
-    if not np.array_equal(actualIm, im):
+    diff = actualIm.flatten() - im.flatten()
+    if not np.allclose(actualIm.flatten(), im.flatten(), atol=1.e-7):
         print("XXXXXXXXXXXXXXX pyramid recoustraction is wrong XXXXXXXXXXXXXXXXxx")
+        ac = actualIm.flatten()
+        iac = im.flatten()
+        print(diff[diff.nonzero()])
+        print('actual: \n', ac, "\n\n")
+        print('excpected: \n', iac, "\n\n")
+
     else:
         print("VVVVVVVVVVVVVVVvv pyramid recoustraction is GOOOOOOOOD VVVVVVVVVVVVVVVVVVVV")
 

@@ -56,23 +56,32 @@ def pyramid_blending(im1, im2, mask, max_levels, filter_size_im, filter_size_mas
 
 
 def laplacian_to_image(lpyr, filter_vec, coeff):
+    # plt.imshow(lpyr[-1], plt.cm.gray)
+    # plt.show()
     cur_im = lpyr[-1] * coeff[-1]
+    # plt.imshow(cur_im, plt.cm.gray)
+    # plt.show()
+    plt.subplot(2, 2, 1)
+    plt.imshow(lpyr[-1], cmap=plt.cm.gray)
+    plt.subplot(2, 2, 2)
+    plt.imshow(cur_im, cmap=plt.cm.gray)
+    plt.show()
+
     for i in range(2, len(lpyr) + 1):
         cur_im = expand(cur_im, filter_vec, lpyr[-i].shape) + (lpyr[-i] * coeff[-i])
 
-    return cur_im
-
+    return cur_im.astype(np.float32)
 
 
 def build_laplacian_pyramid(im, max_levels, filter_size):
     guss_pyr, filter_vec = build_gaussian_pyramid(im, max_levels, filter_size)
     lapl_pyr = []
     ker = create_kernel(filter_size)
-    for i in range(len(guss_pyr) - 1):
+    for i in range(0, len(guss_pyr) - 1):
         expaned_im = expand(guss_pyr[i + 1], ker, guss_pyr[i].shape)
         lapl_pyr.append((guss_pyr[i] - expaned_im).astype(np.float32))
 
-    lapl_pyr.append(guss_pyr[-1])
+    lapl_pyr.append(guss_pyr[-1].astype(np.float32))
     return lapl_pyr, filter_vec
 
 
@@ -100,8 +109,10 @@ def expand(im, filter_vec, new_shape):
 
 
 def blurIm(im, kernel):
-    bluredIm = ndimage.filters.convolve(im, [kernel], mode='wrap')
-    bluredIm = ndimage.filters.convolve(bluredIm, (kernel.T)[:, np.newaxis], mode='wrap')
+    if (len(kernel.shape) == 1):
+        kernel = kernel[:, np.newaxis]
+    bluredIm = ndimage.filters.convolve(im, kernel, mode='wrap')
+    bluredIm = ndimage.filters.convolve(bluredIm, kernel.T, mode='wrap')
     return bluredIm
 
 
