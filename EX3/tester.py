@@ -67,13 +67,16 @@ def test_build_laplacian_pyramid():
 
 def test_laplacian_to_image():
     im = get_image()
-    max_levels = 5
-    filter_size = 3
-    cofee = [0.5, 1, 1, 1, 1]
+    max_levels = 6
+    filter_size = 9
+    cofee = [1, 1, 1, 1, 1, 50]
+    # cofee = [2,1,0.5,0.5,0.5,0.5]
     pyr, filter_vec = mySol.build_laplacian_pyramid(im, max_levels, filter_size)
+    # mySol.display_pyramid(pyr, max_levels)
     actualIm = mySol.laplacian_to_image(pyr, filter_vec, cofee)
 
-    mySol.display_pyramid([im, actualIm], 2)
+    show_plot(actualIm)
+    # mySol.display_pyramid([im, actualIm], 2)
     # show_plot(actualIm)
     if not np.array_equal(actualIm, im):
         print("XXXXXXXXXXXXXXX pyramid recoustraction is wrong XXXXXXXXXXXXXXXXxx")
@@ -189,12 +192,12 @@ def test_display_pyramid():
 
 # test_readce_expand()
 # mySol.blending_example1()
-mySol.blending_example2()
+# mySol.blending_example2()
 # test_blend()
 # test_display_pyramid()
 # test_build_gaussian_pyramid()
 # test_build_laplacian_pyramid()
-# test_laplacian_to_image()
+test_laplacian_to_image()
 # test_create_kernel()
 # test_sub_sample()
 # test_zero_padding()

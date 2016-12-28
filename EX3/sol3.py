@@ -70,7 +70,7 @@ def build_laplacian_pyramid(im, max_levels, filter_size):
     ker = create_kernel(filter_size)
     for i in range(len(guss_pyr) - 1):
         expaned_im = expand(guss_pyr[i + 1], ker, guss_pyr[i].shape)
-        lapl_pyr.append(guss_pyr[i] - expaned_im)
+        lapl_pyr.append((guss_pyr[i] - expaned_im).astype(np.float32))
 
     lapl_pyr.append(guss_pyr[-1])
     return lapl_pyr, filter_vec
@@ -84,7 +84,7 @@ def build_gaussian_pyramid(im, max_levels, filter_size):
 
     # multiply by 2 because when getting inside we add an image that is smaller by half...
     while actualLevels < max_levels and (pyr[-1].shape[0] >= smallestDim * 2 and pyr[-1].shape[1] >= smallestDim * 2):
-        pyr.append(reduce(pyr[-1], filter_size))
+        pyr.append(reduce(pyr[-1], filter_size).astype(np.float32))
         actualLevels += 1
 
     return pyr, filter_vec

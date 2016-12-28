@@ -1,5 +1,5 @@
 When we have more levels the blend is more smudge.
-it maks as blend more times the image's and the masks, and that makes the stiches better.
+it makes as blend more times the image's and the masks, and that makes the stiches better.
 
 When we have small amount of levels the second image will look "above" the first, 
 because of the sharp edges.
