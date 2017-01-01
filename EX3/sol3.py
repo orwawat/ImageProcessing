@@ -3,16 +3,14 @@ from scipy import ndimage
 import matplotlib.pyplot as plt
 from skimage import color
 from scipy.misc import imread as imread
-from os import path
+import os
 
 
 def linear_stretch(im):
-    # minVal = im[np.nonzero(im)[0]]
-    # maxVal = im[np.argmax(im)[0][0]]
-
+    if np.nanmax(im) - np.nanmin(im) == 0:
+        return im
     im_stretch = (im - np.nanmin(im)) / (np.nanmax(im) - np.nanmin(im))
-    # im_stretch = np.round(255 * (im - 0) / (255 - 0))
-    return im_stretch.astype(np.float32)
+    return im_stretch  # .astype(np.float32)
 
 
 def display_pyramid(pyr, levels):
@@ -30,7 +28,6 @@ def render_pyramid(pyr, levels):
         levels = len(pyr)
 
     for i in range(levels):
-        # num_col = np.sum(np.arange(pyr[0].shape[1], pyr[-1].shape[1], 2 ** (-levels)))
         num_col += pyr[i].shape[1]
 
     res = np.zeros(shape=(num_row, num_col))
@@ -56,17 +53,7 @@ def pyramid_blending(im1, im2, mask, max_levels, filter_size_im, filter_size_mas
 
 
 def laplacian_to_image(lpyr, filter_vec, coeff):
-    # plt.imshow(lpyr[-1], plt.cm.gray)
-    # plt.show()
     cur_im = lpyr[-1] * coeff[-1]
-    # plt.imshow(cur_im, plt.cm.gray)
-    # plt.show()
-    plt.subplot(2, 2, 1)
-    plt.imshow(lpyr[-1], cmap=plt.cm.gray)
-    plt.subplot(2, 2, 2)
-    plt.imshow(cur_im, cmap=plt.cm.gray)
-    plt.show()
-
     for i in range(2, len(lpyr) + 1):
         cur_im = expand(cur_im, filter_vec, lpyr[-i].shape) + (lpyr[-i] * coeff[-i])
 
@@ -76,12 +63,13 @@ def laplacian_to_image(lpyr, filter_vec, coeff):
 def build_laplacian_pyramid(im, max_levels, filter_size):
     guss_pyr, filter_vec = build_gaussian_pyramid(im, max_levels, filter_size)
     lapl_pyr = []
-    ker = create_kernel(filter_size)
+    # ker = create_kernel(filter_size)
     for i in range(0, len(guss_pyr) - 1):
-        expaned_im = expand(guss_pyr[i + 1], ker, guss_pyr[i].shape)
+        expaned_im = expand(guss_pyr[i + 1], filter_vec, guss_pyr[i].shape)
         lapl_pyr.append((guss_pyr[i] - expaned_im).astype(np.float32))
 
     lapl_pyr.append(guss_pyr[-1].astype(np.float32))
+
     return lapl_pyr, filter_vec
 
 
@@ -109,10 +97,10 @@ def expand(im, filter_vec, new_shape):
 
 
 def blurIm(im, kernel):
-    if (len(kernel.shape) == 1):
+    if len(kernel.shape) == 1:
         kernel = kernel[:, np.newaxis]
-    bluredIm = ndimage.filters.convolve(im, kernel, mode='wrap')
-    bluredIm = ndimage.filters.convolve(bluredIm, kernel.T, mode='wrap')
+    bluredIm = ndimage.filters.convolve(im, kernel, mode='reflect')
+    bluredIm = ndimage.filters.convolve(bluredIm, kernel.T, mode='reflect')
     return bluredIm
 
 
@@ -137,7 +125,7 @@ def create_kernel(size):
 
     total_kernel = np.sum(kernel)
     kernel = kernel.astype(np.float32) / total_kernel
-    return kernel
+    return kernel.reshape(1, size)
 
 
 def read_image(filename, representation):
@@ -157,12 +145,12 @@ def read_image(filename, representation):
         else:
             # Convert to gray scale
             im_gray = color.rgb2gray(im_float)
-            im_gray = im_gray.astype(np.float32)
+            im_gray = im_gray  # .astype(np.float32)
             returnImage = im_gray
     else:
         returnImage = im_float
 
-    return returnImage
+    return returnImage  # .astype(np.float32)
 
 
 def blend_rgb(im1, im2, mask, max_levels, filter_size_im, filter_size_mask):
@@ -170,7 +158,7 @@ def blend_rgb(im1, im2, mask, max_levels, filter_size_im, filter_size_mask):
     for i in range(im1.shape[2]):
         im_blend[:, :, i] = pyramid_blending(im1[:, :, i], im2[:, :, i], mask,
                                              max_levels, filter_size_im, filter_size_mask)
-    return im_blend
+    return im_blend  # .astype(np.float32)
 
 
 def plot_images(im1, im2, mask, im_blend):
@@ -185,11 +173,17 @@ def plot_images(im1, im2, mask, im_blend):
     plt.imshow(im_blend)
     plt.show()
 
+def relpath(filename):
+    return os.path.join(os.path.dirname(__file__), filename)
 
-def blending_example1():
-    im1 = read_image(path.realpath("images//sunglasses_reflection.jpg"), 2)
-    im2 = read_image(path.realpath("images//full_moon.jpg"), 2)
-    mask = read_image(path.realpath("images//sunglasses_reflection_mask.png"), 1)
+def build_path(fileName):
+    return relpath("images/" + fileName)
+
+
+def blending_example2():
+    im1 = read_image(build_path("sunglasses_reflection.jpg"), 2)
+    im2 = read_image(build_path("full_moon.jpg"), 2)
+    mask = read_image(build_path("sunglasses_reflection_mask.png"), 1)
     # mask = (mask > 0).astype(np.bool)
     mask = mask.astype(np.bool)
     max_level = 6
@@ -201,10 +195,10 @@ def blending_example1():
     return im1, im2, mask, im_blend
 
 
-def blending_example2():
-    im1 = read_image(path.realpath("images//shark.jpg"), 2)
-    im2 = read_image(path.realpath("images//fishes.jpg"), 2)
-    mask = read_image(path.realpath("images//shark_mask.png"), 1)
+def blending_example1():
+    im1 = read_image(build_path("shark.jpg"), 2)
+    im2 = read_image(build_path("fishes.jpg"), 2)
+    mask = read_image(build_path("sharkMask.png"), 1)
     mask = (mask > 0).astype(np.bool)
 
     max_level = 5

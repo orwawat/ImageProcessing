@@ -5,7 +5,7 @@ from scipy.misc import imread, imsave
 from skimage import color
 import matplotlib.pyplot as plt
 
-IM_NAME = 'lena.jpg'
+IM_NAME = 'monkey.jpg'
 
 
 def get_image():
@@ -13,7 +13,7 @@ def get_image():
 
 
 def get_specific_image(name):
-    im = imread(".//images//" + name)
+    im = imread(".//my_images//" + name)
 
     im_gray = color.rgb2gray(im)
     im_gray = im_gray.astype(np.float32)
@@ -33,8 +33,7 @@ def test_build_gaussian_pyramid():
     filter_size = 3
 
     pyr, filter_vec = mySol.build_gaussian_pyramid(im, max_levels, filter_size)
-    if (len(filter_vec) != filter_size):
-        print("XXXXXXXXXXXXXXX pyrmaid filter_ved len is wrong XXXXXXXXXXXXXXXXxx")
+
     if len(pyr) != max_levels:
         print("XXXXXXXXXXXXXXX pyrmaid length is wrong XXXXXXXXXXXXXXXXxx")
     # for pyr_im in pyr:
@@ -69,16 +68,19 @@ def test_laplacian_to_image():
     im = get_image()
     max_levels = 6
     filter_size = 9
-    cofee = [1, 1, 1, 1, 1, 5]
+    cofee = [1, 1, 1, 1, 1, 1]
     # cofee = [2,1,0.5,0.5,0.5,0.5]
     pyr, filter_vec = mySol.build_laplacian_pyramid(im, max_levels, filter_size)
+    print(pyr[0].dtype)
+    print(pyr[1].dtype)
+    print(pyr[2].dtype)
     # mySol.display_pyramid(pyr, max_levels)
     actualIm = mySol.laplacian_to_image(pyr, filter_vec, cofee)
-
+    print(actualIm.dtype)
     mySol.display_pyramid([im, actualIm], 2)
     # show_plot(actualIm)
     diff = actualIm.flatten() - im.flatten()
-    if not np.allclose(actualIm.flatten(), im.flatten(), atol=1.e-7):
+    if not np.allclose(actualIm.flatten(), im.flatten(), atol=1.e-10):
         print("XXXXXXXXXXXXXXX pyramid recoustraction is wrong XXXXXXXXXXXXXXXXxx")
         ac = actualIm.flatten()
         iac = im.flatten()
@@ -196,14 +198,18 @@ def test_display_pyramid():
     mySol.display_pyramid(pyr, len(pyr))
 
 
+
 # test_readce_expand()
 # mySol.blending_example1()
-# mySol.blending_example2()
+import timeit
+# print(timeit.timeit(mySol.blending_example2, number=1))
+mySol.blending_example2()
+
 # test_blend()
 # test_display_pyramid()
 # test_build_gaussian_pyramid()
 # test_build_laplacian_pyramid()
-test_laplacian_to_image()
+# test_laplacian_to_image()
 # test_create_kernel()
 # test_sub_sample()
 # test_zero_padding()
@@ -222,3 +228,12 @@ test_laplacian_to_image()
 #             im[i, j] = 0
 # # im_bool = im.astype(np.bool)
 # imsave(".//images//" + 'bool_shark_mask.png', im)
+
+
+# Sharping games
+# im = get_image()
+# lapl, vec = mySol.build_laplacian_pyramid(im, 6, 5)
+# gau, vec = mySol.build_gaussian_pyramid(im, 6, 5)
+# show_plot(im - lapl[0])
+# mysol.display
+# mySol.display_pyramid([im, im + lapl[0], im + gau[0]], 3)
