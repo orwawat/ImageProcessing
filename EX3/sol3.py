@@ -158,7 +158,7 @@ def blend_rgb(im1, im2, mask, max_levels, filter_size_im, filter_size_mask):
     for i in range(im1.shape[2]):
         im_blend[:, :, i] = pyramid_blending(im1[:, :, i], im2[:, :, i], mask,
                                              max_levels, filter_size_im, filter_size_mask)
-    return im_blend  # .astype(np.float32)
+    return im_blend.astype(np.float32)
 
 
 def plot_images(im1, im2, mask, im_blend):
