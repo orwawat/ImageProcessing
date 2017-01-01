@@ -1,9 +1,14 @@
-First let's understand what the laplacien pyramid contains: when building the laplacien pyramid in each level the frequencies that we will see 
+First let's understand what the laplacien pyramid contains: when building the laplacien 
+pyramid in each level the frequencies that we will see 
 will be smaller and smaller (we get rid of the details and stay 
 only with the "raw" image).
 
-Now, the cofee vector multiplies the levels in a constant --> we will get more/less (if the cofee is greater then 1/smaller than 1) of the matching level.
+Now, the cofee vector multiplies the levels in a constant --> we will get more/less 
+(if the cofee is greater then 1/smaller than 1) of the matching level.
 
-Let's assume we multiply a low level (big image) by a constant that is greater than one --> we have hiegh frequncies there that we amthize them (because we add that level agian at leat partialy to the image) --> we get sharper image.
+Let's assume we multiply a low level (big image) by a constant that is greater than 
+one --> we have hiegh frequncies there that we amthize them 
+(because we add that level agian at leat partialy to the image) --> we get sharper image.
 
-We need to also remmber that multiplying by a constant will change the intensity of the image, so we can get brighter/darker parts of the image.
+We need to also remmber that multiplying by a constant will change the intensity of 
+the image, so we can get brighter/darker parts of the image.
