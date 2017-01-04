@@ -55,8 +55,8 @@ def create_kernel(size):
     kernel = kernel.astype(np.float32) / total_kernel
     return kernel.reshape(1, size)
 
-
-def blur_spatial(im, kernel):
+def blur_spatial(im, kernel_size):
+    kernel = create_kernel(kernel_size)
     if len(kernel.shape) == 1:
         kernel = kernel[:, np.newaxis]
     bluredIm = ndimage.filters.convolve(im, kernel, mode='reflect')
