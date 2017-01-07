@@ -2,6 +2,7 @@ import numpy as np
 from scipy import ndimage
 from scipy.misc import imread
 from skimage import color
+from scipy.signal import convolve2d
 
 def read_image(filename, representation):
     im = imread(filename)
@@ -33,11 +34,11 @@ def zeroPadding(im, new_shape):
     return padded_im
 
 def reduce(im, filter_size):
-    return subSumple(blur_spatial(im, create_kernel(filter_size)))
+    return subSumple(blur_spatial(im, filter_size))
 
 def expand(im, filter_vec, new_shape):
     kernel = filter_vec * 2.0
-    return blur_spatial(zeroPadding(im, new_shape), kernel)
+    return blur_with_kernel(zeroPadding(im, new_shape), kernel)
 
 def subSumple(im):
     return im[::2, ::2]
@@ -55,13 +56,17 @@ def create_kernel(size):
     kernel = kernel.astype(np.float32) / total_kernel
     return kernel.reshape(1, size)
 
-def blur_spatial(im, kernel_size):
-    kernel = create_kernel(kernel_size)
+def blur_with_kernel(im, kernel):
     if len(kernel.shape) == 1:
         kernel = kernel[:, np.newaxis]
     bluredIm = ndimage.filters.convolve(im, kernel, mode='reflect')
     bluredIm = ndimage.filters.convolve(bluredIm, kernel.T, mode='reflect')
+
     return bluredIm
+
+def blur_spatial(im, kernel_size):
+    kernel = create_kernel(kernel_size)
+    return blur_with_kernel(im, kernel)
 
 def laplacian_to_image(lpyr, filter_vec, coeff):
     cur_im = lpyr[-1] * coeff[-1]
