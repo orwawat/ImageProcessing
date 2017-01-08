@@ -9,9 +9,9 @@ from sol4_utils import *
 
 IM_NAME = 'backyard2.jpg'
 # IM_NAME = 'backyard1.jpg'
-MATCHING_IMAGES = ['backyard1.jpg', 'backyard2.jpg', 'backyard3.jpg']
+# MATCHING_IMAGES = ['backyard1.jpg', 'backyard2.jpg', 'backyard3.jpg']
 # MATCHING_IMAGES = ['oxford1.jpg', 'oxford2.jpg']
-# MATCHING_IMAGES = ['office1.jpg', 'office2.jpg', 'office3.jpg', 'office4.jpg']
+MATCHING_IMAGES = ['office1.jpg', 'office2.jpg', 'office3.jpg', 'office4.jpg']
 
 
 def get_images():
@@ -59,12 +59,12 @@ def test_harris_corner_detector():
     plt.subplot(2, 2, 2)
     plt.imshow(ims[1], plt.cm.gray)
     plt.scatter(pos2[:, 0], pos2[:, 1])
-    plt.subplot(2, 2, 3)
-    plt.imshow(im1, plt.cm.gray)
-    plt.scatter(pos1[:, 0] / 4, pos1[:, 1] / 4)
-    plt.subplot(2, 2, 4)
-    plt.imshow(im2, plt.cm.gray)
-    plt.scatter(pos2[:, 0] / 4, pos2[:, 1] / 4)
+    # plt.subplot(2, 2, 3)
+    # plt.imshow(im1, plt.cm.gray)
+    # plt.scatter(pos1[:, 0] / 4, pos1[:, 1] / 4)
+    # plt.subplot(2, 2, 4)
+    # plt.imshow(im2, plt.cm.gray)
+    # plt.scatter(pos2[:, 0] / 4, pos2[:, 1] / 4)
     plt.show()
 
 
@@ -82,9 +82,11 @@ def test_sample_descriptor():
 
 def test_descriptor_score2():
     ims = get_images()
+    im1 = ims[1]
+    im2 = ims[2]
     gaussian_blur = 3
-    pyr1 = build_gaussian_pyramid(ims[0], 3, gaussian_blur)[0]
-    pyr2 = build_gaussian_pyramid(ims[1], 3, gaussian_blur)[0]
+    pyr1 = build_gaussian_pyramid(im1, 3, gaussian_blur)[0]
+    pyr2 = build_gaussian_pyramid(im2, 3, gaussian_blur)[0]
     # pos1 = spread_out_corners(im1, 7, 7, 3)
     # desc1 = mySol.sample_descriptor(im1, pos1, 3)
     # desc2 = mySol.sample_descriptor(im1, spread_out_corners(im2, 7, 7, 3), 3)
@@ -99,12 +101,19 @@ def test_descriptor_score2():
 
 def test_descriptor_score():
     ims = get_images()
-    pos1 = spread_out_corners(ims[0], 7, 7, 3)
-    desc1 = mySol.sample_descriptor(ims[0], pos1, 3)
-    desc2 = mySol.sample_descriptor(ims[1], spread_out_corners(ims[1], 7, 7, 3), 3)
+    im1 = ims[1]
+    im2 = ims[2]
+    m = 5
+    n = 5
+    radius = 5
+    pos1 = spread_out_corners(im1, m, n, radius)
+    desc1 = mySol.sample_descriptor(im1, pos1, 3)
+    desc2 = mySol.sample_descriptor(im2, spread_out_corners(im2, m, n, radius), 3)
     dotProduct = mySol.calc_descriptor_score(desc1, desc2)
     if (dotProduct.max() > 1 or dotProduct.min() < -1):
         print('XXXXXX descriptors dot product is not in [-1,1] range XXXXXXXXXX')
+    else:
+        print('OK')
 
 
 def test_transform_coordinates_level():
@@ -126,16 +135,35 @@ def test_transform_coordinates_level():
         print("test_transform_coordinates_level - OK")
 
 
+def test_ransac_homography():
+    ims = get_images()
+    min_score = 0.9
+    im1 = ims[1]
+    im2 = ims[2]
+
+    pos1, desc_1 = mySol.find_features(build_gaussian_pyramid(im1, 3, 3)[0])
+    pos2, desc_2 = mySol.find_features(build_gaussian_pyramid(im2, 3, 3)[0])
+    match_ind1, match_ind2 = mySol.match_features(desc_1, desc_2, min_score)
+    H12, inliners = mySol.ransac_homography(np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), 1000, 3)
+    mySol.display_matches(im1, im2, np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), inliners)
+    # mySol.display_matches(im1, im2, pos1, pos2, inliners)
+    if (type(inliners) != np.ndarray):
+        print('XXXXXX Wrong type')
+    elif (H12.shape != (3, 3)):
+        print('XXXXXX Wrong shape')
+    else:
+        print('OK')
+
 def test_match_features():
     ims = get_images()
-    min_score = 0.5
+    min_score = 0.9
     im1 = ims[0]
     im2 = ims[1]
     pos1, desc_1 = mySol.find_features(build_gaussian_pyramid(im1, 3, 3)[0])
     pos2, desc_2 = mySol.find_features(build_gaussian_pyramid(im2, 3, 3)[0])
     match_ind1, match_ind2 = mySol.match_features(desc_1, desc_2, min_score)
 
-    for i in range(len(match_ind1)):
+    for i in range(35, len(match_ind1)):
         plt.figure()
         plt.subplot(1, 2, 1)
         plt.imshow(im1, plt.cm.gray)
@@ -146,14 +174,26 @@ def test_match_features():
         plt.show()
 
 
+def test_apply_homography():
+    H12 = np.array([[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+    pos1 = np.array([[1, 2], [2, 3], [5, 0], [7, 7]])
+    pos2 = mySol.apply_homography(pos1, H12)
 
+    if (pos2.shape != pos1.shape):
+        print('XXXXXX test_apply_homography bad shape XXXXXXX')
+    elif not np.array_equal(pos1, pos2):
+        print('XXXXXX test_apply_homography bad values XXXXXXX')
+    else:
+        print('OK')
 
 # test_harris_corner_detector()
 # test_sample_descriptor()
 # test_transform_coordinates_level()
 # test_descriptor_score()
 # test_descriptor_score2()
-test_match_features()
+# test_match_features()
+# test_apply_homography()
+test_ransac_homography()
 
 # twod = np.array([[0,0], [1,1], [2,2], [3,3]])
 # a = np.array([twod, twod])
@@ -161,9 +201,3 @@ test_match_features()
 # b = a.reshape((a.shape[2], -1), order='F')
 # print(b)
 # print(a)
-
-x = [1, 2, 3]
-y = [2, 3, 4]
-
-
-# print(np.dstack(np.meshgrid(x, y)).reshape(-1, 2))
