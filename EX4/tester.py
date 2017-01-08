@@ -9,9 +9,9 @@ from sol4_utils import *
 
 IM_NAME = 'backyard2.jpg'
 # IM_NAME = 'backyard1.jpg'
-# MATCHING_IMAGES = ['backyard1.jpg', 'backyard2.jpg', 'backyard3.jpg']
+MATCHING_IMAGES = ['backyard1.jpg', 'backyard2.jpg', 'backyard3.jpg']
 # MATCHING_IMAGES = ['oxford1.jpg', 'oxford2.jpg']
-MATCHING_IMAGES = ['office1.jpg', 'office2.jpg', 'office3.jpg', 'office4.jpg']
+# MATCHING_IMAGES = ['office1.jpg', 'office2.jpg', 'office3.jpg', 'office4.jpg']
 
 
 def get_images():
@@ -137,9 +137,9 @@ def test_transform_coordinates_level():
 
 def test_ransac_homography():
     ims = get_images()
-    min_score = 0.9
-    im1 = ims[1]
-    im2 = ims[2]
+    min_score = 0.5
+    im1 = ims[0]
+    im2 = ims[1]
 
     pos1, desc_1 = mySol.find_features(build_gaussian_pyramid(im1, 3, 3)[0])
     pos2, desc_2 = mySol.find_features(build_gaussian_pyramid(im2, 3, 3)[0])

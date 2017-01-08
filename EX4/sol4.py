@@ -186,11 +186,13 @@ def display_matches(im1, im2, pos1, pos2, inliers):
     # plt.scatter(pos1[:, 0], pos1[:, 1])
     # plt.scatter(pos2[:, 0] + shift_amount, pos2[:, 1])
     # TODO: get rid of loop
+
+    # inliers_points = [points_from_ind(pos1, inliers), points_from_ind(pos2, inliers)]
+    # plt.plot([inliers_points[0][:, 0], inliers_points[1][:, 0] + shift_amount],
+    #          [inliers_points[0][:, 1], inliers_points[1][:, 1]], mfc='r', c='y', lw=.4, ms=10, marker='o')
     for i in range(len(pos1)):
         x = [pos1[i, 0], pos2[i, 0] + shift_amount]
         y = [pos1[i, 1], pos2[i, 1]]
-        # x = [pos2[i, 0] + shift_amount]
-        # y = [pos2[i, 1]]
         if i in inliers:
             plt.plot(x, y, mfc='r', c='y', lw=.4, ms=10, marker='o')
         else:
