@@ -180,14 +180,27 @@ def display_matches(im1, im2, pos1, pos2, inliers):
 
 def accumulate_homographies(H_successive, m):
     H2m = [None] * len(H_successive)
-    H2m[m] = np.ones(shape=(3, 3))
+    H2m[m] = np.eye(3)
     # TODO: Check if it's faster with recursive / one for loop
     for i in range(m - 1, -1, -1):
         H2m[i] = H2m[i + 1] * H_successive[i]
         H2m[i] /= H2m[i][2, 2]
 
-    for i in range(m + 1, len(H_successive)):
-        H2m[i] = H2m[i - 1] * H_successive[i]
+    # H2m[m + 1] = np.linalg.inv(H_successive[m])
+    # H2m[m + 2] = H2m[m + 1] * np.linalg.inv(H_successive[m + 1])
+    # H2m[m + 3] = H2m[m + 2] * np.linalg.inv(H_successive[m + 2])
+    if (m + 1 < len(H_successive)):
+        H2m[m + 1] = np.linalg.inv(H_successive[m])
+        H2m[m + 1] /= H2m[m + 1][2, 2]
+    for i in range(m + 2, len(H_successive)):
+        H2m[i] = H2m[i - 1] * np.linalg.inv(H_successive[i - 1])
         H2m[i] /= H2m[i][2, 2]
 
     return H2m
+
+
+def render_panorama(ims, Hs):
+    panorama_ims = []
+    for i in range(len(Hs)):
+        panorama_ims.appennd(np.dot(ims[i]))
+    panorama_ims = np.dot(ims, Hs)

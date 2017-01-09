@@ -191,7 +191,7 @@ def test_apply_homography():
         print('OK')
 
 
-def test_accumulate_homographies():
+def test_accumulate_homographies_3():
     # num_samples = 5
     # H_successive = [None] * num_samples
     # for i in range(num_samples):
@@ -213,16 +213,61 @@ def test_accumulate_homographies():
     excepected_h2m[0] = H_successive[0] * H_successive[1] * H_successive[2]
     excepected_h2m[1] = H_successive[1] * H_successive[2]
     excepected_h2m[2] = H_successive[2]
-    excepected_h2m[3] = np.ones(shape=(3,3))
+    excepected_h2m[3] = np.eye(3)
 
     for mat in excepected_h2m:
-        mat /= mat[2,2]
+        mat /= mat[2, 2]
 
     actual_h2m = mySol.accumulate_homographies(H_successive, m)
     if (np.allclose(actual_h2m, excepected_h2m)):
         print('OK')
     else:
         print('XXXXXXX test_accumulate_homographies XXXXXXX')
+
+
+def test_accumulate_homographies_0():
+    H_successive = []
+    H_successive.append(np.random.random_sample(9).reshape(3, 3))
+    H_successive.append(np.random.random_sample(9).reshape(3, 3))
+    H_successive.append(np.random.random_sample(9).reshape(3, 3))
+    H_successive.append(np.random.random_sample(9).reshape(3, 3))
+
+    m = 0
+    excepected_h2m = [None] * len(H_successive)
+    excepected_h2m[0] = np.eye(3)
+    # H_successive[0] * H_successive[1] * H_successive[2]
+    excepected_h2m[1] = np.linalg.inv(H_successive[0])
+    excepected_h2m[2] = np.linalg.inv(H_successive[0]) * np.linalg.inv(H_successive[1])
+    excepected_h2m[3] = np.linalg.inv(H_successive[0]) * np.linalg.inv(H_successive[1]) * np.linalg.inv(H_successive[2])
+
+    for mat in excepected_h2m:
+        mat /= mat[2, 2]
+
+    actual_h2m = mySol.accumulate_homographies(H_successive, m)
+    if (np.allclose(actual_h2m, excepected_h2m)):
+        print('OK')
+    else:
+        print('XXXXXXX test_accumulate_homographies_0 XXXXXXX')
+
+
+def test_render_panorama():
+    ims = get_images()
+    min_score = 0.9
+    # H_successive = [None] * (len(ims) - 1)
+    H_successive = []
+
+    for i in range(len(ims) - 1):
+        pos1, desc_1 = mySol.find_features(build_gaussian_pyramid(ims[i], 3, 3)[0])
+        pos2, desc_2 = mySol.find_features(build_gaussian_pyramid(ims[i + 1], 3, 3)[0])
+        match_ind1, match_ind2 = mySol.match_features(desc_1, desc_2, min_score)
+        H_successive.append(
+            mySol.ransac_homography(np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), 1000, 3)[0])
+
+    Hs = mySol.accumulate_homographies(H_successive, len(ims) // 2)
+    panorma = mySol.render_panorama(ims, Hs)
+    plt.imshow(panorma, plt.cm.gray)
+    plt.show()
+
 
 # test_harris_corner_detector()
 # test_sample_descriptor()
@@ -232,7 +277,10 @@ def test_accumulate_homographies():
 # test_match_features()
 # test_apply_homography()
 # test_ransac_homography()
-test_accumulate_homographies()
+# test_accumulate_homographies_3()
+test_accumulate_homographies_0()
+# test_render_panorama()
+
 
 # twod = np.array([[0,0], [1,1], [2,2], [3,3]])
 # a = np.array([twod, twod])
