@@ -2,6 +2,7 @@ import numpy as np
 from scipy import signal as sig
 from scipy.misc import imread, imsave
 from skimage import color
+from timeit import timeit
 import matplotlib.pyplot as plt
 import sol4 as mySol
 from sol4_add import *
@@ -10,6 +11,8 @@ from sol4_utils import *
 IM_NAME = 'backyard2.jpg'
 # IM_NAME = 'backyard1.jpg'
 MATCHING_IMAGES = ['backyard1.jpg', 'backyard2.jpg', 'backyard3.jpg']
+
+
 # MATCHING_IMAGES = ['oxford1.jpg', 'oxford2.jpg']
 # MATCHING_IMAGES = ['office1.jpg', 'office2.jpg', 'office3.jpg', 'office4.jpg']
 
@@ -154,6 +157,7 @@ def test_ransac_homography():
     else:
         print('OK')
 
+
 def test_match_features():
     ims = get_images()
     min_score = 0.9
@@ -186,6 +190,40 @@ def test_apply_homography():
     else:
         print('OK')
 
+
+def test_accumulate_homographies():
+    # num_samples = 5
+    # H_successive = [None] * num_samples
+    # for i in range(num_samples):
+    #     H_successive[i] = np.random.random_sample(9).reshape(3, 3)
+
+    H_successive = []
+    # H_successive.append(np.ones(shape=(3,3)) * 2)
+    # H_successive.append(np.ones(shape=(3, 3)))
+    # H_successive.append(np.ones(shape=(3, 3)) * 0.5)
+    # H_successive.append(np.ones(shape=(3, 3)) * 3)
+
+    H_successive.append(np.random.random_sample(9).reshape(3, 3))
+    H_successive.append(np.random.random_sample(9).reshape(3, 3))
+    H_successive.append(np.random.random_sample(9).reshape(3, 3))
+    H_successive.append(np.random.random_sample(9).reshape(3, 3))
+
+    m = 3
+    excepected_h2m = [None] * len(H_successive)
+    excepected_h2m[0] = H_successive[0] * H_successive[1] * H_successive[2]
+    excepected_h2m[1] = H_successive[1] * H_successive[2]
+    excepected_h2m[2] = H_successive[2]
+    excepected_h2m[3] = np.ones(shape=(3,3))
+
+    for mat in excepected_h2m:
+        mat /= mat[2,2]
+
+    actual_h2m = mySol.accumulate_homographies(H_successive, m)
+    if (np.allclose(actual_h2m, excepected_h2m)):
+        print('OK')
+    else:
+        print('XXXXXXX test_accumulate_homographies XXXXXXX')
+
 # test_harris_corner_detector()
 # test_sample_descriptor()
 # test_transform_coordinates_level()
@@ -193,7 +231,8 @@ def test_apply_homography():
 # test_descriptor_score2()
 # test_match_features()
 # test_apply_homography()
-test_ransac_homography()
+# test_ransac_homography()
+test_accumulate_homographies()
 
 # twod = np.array([[0,0], [1,1], [2,2], [3,3]])
 # a = np.array([twod, twod])
@@ -201,3 +240,7 @@ test_ransac_homography()
 # b = a.reshape((a.shape[2], -1), order='F')
 # print(b)
 # print(a)
+
+
+# print(timeit("np.empty(shape=(1000,)).tolist()", setup='import numpy as np', number=1000))
+# print(timeit("[None] * 1000", number=1000))

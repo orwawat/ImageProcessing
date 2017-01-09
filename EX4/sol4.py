@@ -41,9 +41,6 @@ def sample_descriptor(im, pos, desc_rad):
     desc = np.zeros((K, K, pos.shape[0]))
     # TODO: Get rid of the loop
     for i in range(pos.shape[0]):
-        # Ensure the point is at least 'desc_rad' from the edge
-        # if pos[i, 0] - desc_rad >= 0 and pos[i, 1] - desc_rad >= 0 and \
-        #                         pos[i, 0] + desc_rad < im.shape[0] and pos[i, 1] + desc_rad < im.shape[1]:
         x_pos = np.arange(pos[i, 0] - desc_rad, pos[i, 0] + desc_rad + 1, step=1)
         y_pos = np.arange(pos[i, 1] - desc_rad, pos[i, 1] + desc_rad + 1, step=1)
         poss = np.dstack(np.meshgrid(y_pos, x_pos)).reshape(-1, 2)
@@ -93,22 +90,10 @@ def get_highest_indices(arr):
 
 def match_features(desc1, desc2, min_score):
     S = calc_descriptor_score(desc1, desc2)
-    if (S.max() > 1 or S.min() < -1):
-        print('XXXXXX descriptors dot product is not in [-1,1] range XXXXXXXXXX')
     match_ind1 = np.empty(shape=(0,), dtype=int)
     match_ind2 = np.empty(shape=(0,), dtype=int)
 
-    # # TODO: DELETE
-    # k = np.zeros(shape=(49, desc2.shape[2]))
-    # for i in range(desc2.shape[2]):
-    #     k[:, i] = desc2[:, :, i].flatten()
-    #
-    # if (np.allclose(S[17, :],np.dot(desc1[:, :, 17].flatten(), k))):
-    #     print('good')
-    # else:
-    #     print('bad')
-    #
-    # # DELETE
+    # TODO: Get rid of the loop
     for i in range(desc1.shape[2]):
         # get the top two indices from image 2 that match i (i is an index from image 1)
         k_matchs = get_highest_indices(S[i, :])
@@ -149,7 +134,7 @@ def ransac_homography(pos1, pos2, num_iters, inlier_tol):
         cur_pos1 = points_from_ind(pos1, random_indices)
         cur_pos2 = points_from_ind(pos2, random_indices)
         H12 = sol4_add.least_squares_homography(cur_pos1, cur_pos2)
-        if (H12 is None):
+        if H12 is None:
             continue
 
         P2 = apply_homography(pos1, H12)
@@ -172,30 +157,37 @@ def display_matches(im1, im2, pos1, pos2, inliers):
 
     plt.imshow(im, plt.cm.gray)
 
-    # for i in range(35, len(pos1)):
-    #     plt.figure()
-    #     plt.subplot(1, 2, 1)
-    #     plt.imshow(im1, plt.cm.gray)
-    #     plt.scatter(pos1[i, 0], pos1[i, 1])
-    #     plt.subplot(1, 2, 2)
-    #     plt.imshow(im2, plt.cm.gray)
-    #     plt.scatter(pos2[i, 0], pos2[i, 1])
-    #     plt.show()
+    inliers_points = [points_from_ind(pos1, inliers), points_from_ind(pos2, inliers)]
+    plt.plot([inliers_points[0][:, 0], inliers_points[1][:, 0] + shift_amount],
+             [inliers_points[0][:, 1], inliers_points[1][:, 1]], mfc='r', c='y', lw=.4, ms=10, marker='o')
 
+    outlier_indices = np.delete(np.arange(start=0, stop=len(pos1) - 1), inliers)
+    outlier_points = [points_from_ind(pos1, outlier_indices), points_from_ind(pos2, outlier_indices)]
+    plt.plot([outlier_points[0][:, 0], outlier_points[1][:, 0] + shift_amount],
+             [outlier_points[0][:, 1], outlier_points[1][:, 1]], mfc='r', c='b', lw=.4, ms=10, marker='o')
 
-    # plt.scatter(pos1[:, 0], pos1[:, 1])
-    # plt.scatter(pos2[:, 0] + shift_amount, pos2[:, 1])
-    # TODO: get rid of loop
-
-    # inliers_points = [points_from_ind(pos1, inliers), points_from_ind(pos2, inliers)]
-    # plt.plot([inliers_points[0][:, 0], inliers_points[1][:, 0] + shift_amount],
-    #          [inliers_points[0][:, 1], inliers_points[1][:, 1]], mfc='r', c='y', lw=.4, ms=10, marker='o')
-    for i in range(len(pos1)):
-        x = [pos1[i, 0], pos2[i, 0] + shift_amount]
-        y = [pos1[i, 1], pos2[i, 1]]
-        if i in inliers:
-            plt.plot(x, y, mfc='r', c='y', lw=.4, ms=10, marker='o')
-        else:
-            plt.plot(x, y, mfc='r', c='b', lw=.4, ms=10, marker='o')
+    # TODO: DELETE
+    # for i in range(len(pos1)):
+    #     x = [pos1[i, 0], pos2[i, 0] + shift_amount]
+    #     y = [pos1[i, 1], pos2[i, 1]]
+    #     if i in inliers:
+    #         plt.plot(x, y, mfc='r', c='y', lw=.4, ms=10, marker='o')
+    #     else:
+    #         plt.plot(x, y, mfc='r', c='b', lw=.4, ms=10, marker='o')
 
     plt.show()
+
+
+def accumulate_homographies(H_successive, m):
+    H2m = [None] * len(H_successive)
+    H2m[m] = np.ones(shape=(3, 3))
+    # TODO: Check if it's faster with recursive / one for loop
+    for i in range(m - 1, -1, -1):
+        H2m[i] = H2m[i + 1] * H_successive[i]
+        H2m[i] /= H2m[i][2, 2]
+
+    for i in range(m + 1, len(H_successive)):
+        H2m[i] = H2m[i - 1] * H_successive[i]
+        H2m[i] /= H2m[i][2, 2]
+
+    return H2m
