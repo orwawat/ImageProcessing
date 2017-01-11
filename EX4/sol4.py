@@ -31,7 +31,6 @@ def harris_corner_detector(im):
 
 
 def transform_coordinates_level(pos, old_level, new_level):
-    # 2^(li−lj)(xli, yli)
     factor = 2 ** (old_level - new_level)
     return pos * factor
 
@@ -83,6 +82,7 @@ def get_highest_indices(arr):
     :param arr: a 1D array
     :return: the indices of the two highest values
     '''
+    # TODO: Change to -2, need to replace nan to -inf?
     arr = np.argpartition(arr * -1, 2)
     result_args = arr[:2]
     return result_args
@@ -118,13 +118,15 @@ def apply_homography(pos1, H12):
     pos2_homograph = np.empty(shape=pos1.shape)
     for j in range(pos1.shape[0]):
         pos2_homograph[j, :] = np.dot(H12, pos1[j, :])
+        # if pos2_homograph[j, 2] == 0:
+        #     pos2_homograph[j, 2] = np.inf
 
     pos2 = np.column_stack((pos2_homograph[:, 0] / pos2_homograph[:, 2], pos2_homograph[:, 1] / pos2_homograph[:, 2]))
     return pos2
 
 
 def squared_euclidean_distance(v1, v2):
-    return ((v1 - v2) ** 2)
+    return np.square(np.linalg.norm(v1 - v2, axis=1))
 
 
 def ransac_homography(pos1, pos2, num_iters, inlier_tol):
@@ -161,7 +163,7 @@ def display_matches(im1, im2, pos1, pos2, inliers):
     plt.plot([inliers_points[0][:, 0], inliers_points[1][:, 0] + shift_amount],
              [inliers_points[0][:, 1], inliers_points[1][:, 1]], mfc='r', c='y', lw=.4, ms=10, marker='o')
 
-    outlier_indices = np.delete(np.arange(start=0, stop=len(pos1) - 1), inliers)
+    outlier_indices = np.delete(np.arange(start=0, stop=len(pos1)), inliers)
     outlier_points = [points_from_ind(pos1, outlier_indices), points_from_ind(pos2, outlier_indices)]
     plt.plot([outlier_points[0][:, 0], outlier_points[1][:, 0] + shift_amount],
              [outlier_points[0][:, 1], outlier_points[1][:, 1]], mfc='r', c='b', lw=.4, ms=10, marker='o')
@@ -178,29 +180,76 @@ def display_matches(im1, im2, pos1, pos2, inliers):
     plt.show()
 
 
-def accumulate_homographies(H_successive, m):
-    H2m = [None] * len(H_successive)
-    H2m[m] = np.eye(3)
-    # TODO: Check if it's faster with recursive / one for loop
-    for i in range(m - 1, -1, -1):
-        H2m[i] = H2m[i + 1] * H_successive[i]
-        H2m[i] /= H2m[i][2, 2]
+def normalize_homohraphie_matrix(matrix):
+    if (matrix[2, 2] == 0):
+        matrix[2, 2] == np.inf
+    matrix /= matrix[2, 2]
+    return matrix
 
-    # H2m[m + 1] = np.linalg.inv(H_successive[m])
-    # H2m[m + 2] = H2m[m + 1] * np.linalg.inv(H_successive[m + 1])
-    # H2m[m + 3] = H2m[m + 2] * np.linalg.inv(H_successive[m + 2])
-    if (m + 1 < len(H_successive)):
+
+def accumulate_homographies(H_successive, m):
+    H2m = [None] * (len(H_successive) + 1)
+    H2m[m] = np.eye(3)
+
+    if (m + 1 < len(H_successive) + 1):
         H2m[m + 1] = np.linalg.inv(H_successive[m])
-        H2m[m + 1] /= H2m[m + 1][2, 2]
-    for i in range(m + 2, len(H_successive)):
+        H2m[m + 1] = normalize_homohraphie_matrix(H2m[m + 1])
+    if (m - 1 >= 0):
+        H2m[m - 1] = H_successive[m - 1]
+
+    # TODO: Check if it's faster with recursive / one for loop
+    for i in range(m - 2, -1, -1):
+        H2m[i] = H2m[i + 1] * H_successive[i]
+        H2m[i] = normalize_homohraphie_matrix(H2m[i])
+
+    for i in range(m + 2, len(H_successive) + 1):
         H2m[i] = H2m[i - 1] * np.linalg.inv(H_successive[i - 1])
-        H2m[i] /= H2m[i][2, 2]
+        H2m[i] = normalize_homohraphie_matrix(H2m[i])
 
     return H2m
 
 
+def calc_centers_and_corners(ims, Hs):
+    centers = []  # np.empty(shape=(1, len(ims)))
+    corners = np.empty(shape=(len(ims), 4, 2))
+
+    for i in range(len(ims)):
+        corners[i, 0, :] = [0, 0]
+        corners[i, 1, :] = [0, ims[i].shape[0]]
+        corners[i, 2, :] = [ims[i].shape[1], 0]
+        corners[i, 3, :] = [ims[i].shape[1], ims[i].shape[1]]
+        centers.append(
+            apply_homography(np.array([ims[i].shape[1] // 2, ims[i].shape[0] // 2]).reshape(1, 2), Hs[i])[0][0])
+        corners[i, :, :] = apply_homography(corners[i, :, :], Hs[i])
+    return centers, corners
+
+
 def render_panorama(ims, Hs):
-    panorama_ims = []
-    for i in range(len(Hs)):
-        panorama_ims.appennd(np.dot(ims[i]))
-    panorama_ims = np.dot(ims, Hs)
+    centers, corners = calc_centers_and_corners(ims, Hs)
+    max_x = np.amax(corners[:, :, 0]).astype(np.int)
+    min_x = np.amin(corners[:, :, 0]).astype(np.int)
+    max_y = np.amax(corners[:, :, 1]).astype(np.int)
+    min_y = np.amin(corners[:, :, 1]).astype(np.int)
+
+    panorama = np.zeros((max_y - min_y + 1, max_x - min_x + 1), dtype=np.float32)
+
+    next_strip = min_x
+    y_vec = np.arange(min_y, max_y)
+
+    for i in range(len(ims)):
+        prev_strip = next_strip.astype(np.int)
+        if i != len(ims) - 1:
+            next_strip = ((centers[i] + centers[i + 1]) // 2).astype(np.int)
+        else:
+            next_strip = max_x.astype(np.int)
+
+        m_grid = np.meshgrid(np.arange(prev_strip, next_strip), y_vec)
+        m_coord = np.column_stack((m_grid[0].flatten(), m_grid[1].flatten()))
+        i_points = apply_homography(m_coord, np.linalg.inv(Hs[i]))
+
+        i_grid = [i_points[:, 1].reshape(m_grid[0].shape), i_points[:, 0].reshape(m_grid[0].shape)]
+
+        strip = ndimage.map_coordinates(ims[i], i_grid, order=1, prefilter=False)
+        panorama[0: max_y - min_y, prev_strip - min_x: next_strip - min_x] = strip
+
+    return panorama
