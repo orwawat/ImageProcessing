@@ -280,28 +280,29 @@ def test_get_empty_panorama():
 
 
 def test_render_panorama():
-    ims = get_images()
-    min_score = 0.9
-    # H_successive = [None] * (len(ims) - 1)
-    H_successive = []
+    for i in range(20):
+        ims = get_images()
+        min_score = 0.9
+        # H_successive = [None] * (len(ims) - 1)
+        H_successive = []
 
-    for i in range(len(ims) - 1):
-        pos1, desc_1 = mySol.find_features(build_gaussian_pyramid(ims[i], 3, 3)[0])
-        pos2, desc_2 = mySol.find_features(build_gaussian_pyramid(ims[i + 1], 3, 3)[0])
-        match_ind1, match_ind2 = mySol.match_features(desc_1, desc_2, min_score)
-        H_successive.append(
-            mySol.ransac_homography(np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), 10000, 6)[0])
+        for i in range(len(ims) - 1):
+            pos1, desc_1 = mySol.find_features(build_gaussian_pyramid(ims[i], 3, 3)[0])
+            pos2, desc_2 = mySol.find_features(build_gaussian_pyramid(ims[i + 1], 3, 3)[0])
+            match_ind1, match_ind2 = mySol.match_features(desc_1, desc_2, min_score)
+            H_successive.append(
+                mySol.ransac_homography(np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), 10000, 6)[0])
 
-    Hs = mySol.accumulate_homographies(H_successive, (len(ims) - 1) // 2)
-    # panorma = mySol.render_panorama(ims, Hs)
-    # plt.imshow(panorma, plt.cm.gray)
-    # plt.imshow(panorma)
-    # plt.show()
-    panorma = mySol.render_panorama_blending(ims, Hs)
-    plt.imshow(panorma, plt.cm.gray)
-    # plt.imshow(panorma)
-    plt.show()
-
+        Hs = mySol.accumulate_homographies(H_successive, (len(ims) - 1) // 2)
+        # panorma = mySol.render_panorama(ims, Hs)
+        # plt.imshow(panorma, plt.cm.gray)
+        # plt.imshow(panorma)
+        # plt.show()
+        panorma = mySol.render_panorama(ims, Hs)
+        # plt.imshow(panorma, plt.cm.gray)
+        # plt.imshow(panorma)
+        # plt.show()
+        imsave('./yard' + i + '.jpeg', panorma)
 
 
 # test_harris_corner_detector()

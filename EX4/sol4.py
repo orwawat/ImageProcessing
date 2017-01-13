@@ -42,23 +42,24 @@ def sample_descriptor(im, pos, desc_rad):
         y_pos = np.arange(pos[i, 1] - desc_rad, pos[i, 1] + desc_rad + 1, step=1)
         poss = np.meshgrid(y_pos, x_pos)
         patch = ndimage.map_coordinates(im, (poss[0].flatten(), poss[1].flatten()), order=1, prefilter=False)
+        # poss = np.meshgrid(y_pos, x_pos, indexing='ij')
+        # patch = ndimage.map_coordinates(im, poss, order=1, prefilter=False)
         normalized_patch = patch - np.mean(patch)
         norm = np.linalg.norm(normalized_patch)
         if (norm != 0):
             desc[:, :, i] = (normalized_patch / norm).reshape(K, K)
         else:
+            # desc[:, :, i] = (normalized_patch / norm).reshape(K, K)
             desc[:, :, i] = (normalized_patch * np.nan).reshape(K, K)
-
+            print('got NAN')
     return desc
 
 
 def find_features(pyr):
-    # TODO: From where do we get m,n,radius, descriptor radius
     desc_rad = 3
-    pos_l0 = sol4_add.spread_out_corners(pyr[0], 7, 7, 12)
+    pos_l0 = sol4_add.spread_out_corners(pyr[0], 7, 7, desc_rad * 2 ** 2)
     pos_l2 = transform_coordinates_level(pos_l0, 0, 2)
     desc = sample_descriptor(pyr[2], pos_l2, desc_rad)
-    # desc = sample_descriptor(pyr[0], pos_l0, desc_rad)
     return pos_l0, desc
 
 
@@ -88,8 +89,6 @@ def get_highest_indices(arr):
 
 def match_features(desc1, desc2, min_score):
     S = calc_descriptor_score(desc1, desc2)
-    # S = np.array([[0.99, 0.99, 0.5], [0.99, 0.5, 0.7], [0.5,0.99,0.3]])
-    # print(S)
     match_ind1 = np.empty(shape=(0,), dtype=int)
     match_ind2 = np.empty(shape=(0,), dtype=int)
 
@@ -98,13 +97,21 @@ def match_features(desc1, desc2, min_score):
         # get the top two indices from image 2 that match i (i is an index from image 1)
         k_matchs = get_highest_indices(S[i, :])
         # Check if i is one of the top two indices of the first index
+
+        # if  not np.array_equiv(np.array(np.where(S[i, :] >= np.min(S[i, k_matchs]))).sort(), k_matchs.sort()):
+        #     print('fuck')
+
         if (i in get_highest_indices(S[:, k_matchs[0]])) and S[i, k_matchs[0]] > min_score:
             # found a match
+            # if len(np.where(S[:, k_matchs[0]] > S[i,k_matchs[0]])[0]) > 1:
+            #     print('fuck')
             match_ind1 = np.append(match_ind1, i)
             match_ind2 = np.append(match_ind2, k_matchs[0])
         # Check if i is one of the top two indices of the second index
         if (i in get_highest_indices(S[:, k_matchs[1]])) and S[i, k_matchs[1]] > min_score:
             # found a match
+            # if len(np.where(S[:, k_matchs[1]] > S[i, k_matchs[0]])[0]) > 1:
+            #     print('fuck')
             match_ind1 = np.append(match_ind1, i)
             match_ind2 = np.append(match_ind2, k_matchs[1])
 
@@ -132,14 +139,19 @@ def squared_euclidean_distance(v1, v2):
 
 
 def ransac_homography(pos1, pos2, num_iters, inlier_tol):
-    max_inliers = []
+    max_inliers = np.array([])
+    ind = np.arange(pos1.shape[0])
     for i in range(num_iters):
-        random_indices = random.sample(range(0, len(pos1) - 1), 4)
-        cur_pos1 = points_from_ind(pos1, random_indices)
-        cur_pos2 = points_from_ind(pos2, random_indices)
-        H12 = sol4_add.least_squares_homography(cur_pos1, cur_pos2)
-        if H12 is None:
-            continue
+        H12 = None
+        while H12 is None:
+            np.random.shuffle(ind)
+            random_indices = ind[:4]
+            # random_indices = random.sample(range(0, len(pos1) - 1), 4)
+            cur_pos1 = points_from_ind(pos1, random_indices)
+            cur_pos2 = points_from_ind(pos2, random_indices)
+            H12 = sol4_add.least_squares_homography(cur_pos1, cur_pos2)
+        # if H12 is None:
+        #     continue
 
         P2 = apply_homography(pos1, H12)
         current_error = squared_euclidean_distance(P2, pos2)
@@ -212,7 +224,7 @@ def calc_centers_and_corners(ims, Hs):
     return centers, corners
 
 
-def render_panorama(ims, Hs):
+def render_panorama_no_blending(ims, Hs):
     centers, corners = calc_centers_and_corners(ims, Hs)
     max_x = np.max(corners[:, :, 0]).astype(np.int)
     min_x = np.min(corners[:, :, 0]).astype(np.int)
@@ -244,7 +256,7 @@ def render_panorama(ims, Hs):
 
 
 def get_blending_strip_diff(index, num_images):
-    blending_size = 128
+    blending_size = 64
     if index == 0:
         return 0, blending_size
     elif index == num_images - 1:
@@ -253,18 +265,17 @@ def get_blending_strip_diff(index, num_images):
         return -blending_size, blending_size
 
 
-def render_panorama_blending(ims, Hs):
+def render_panorama(ims, Hs):
     centers, corners = calc_centers_and_corners(ims, Hs)
     max_x = np.max(corners[:, :, 0]).astype(np.int)
     min_x = np.min(corners[:, :, 0]).astype(np.int)
     max_y = np.max(corners[:, :, 1]).astype(np.int)
     min_y = np.min(corners[:, :, 1]).astype(np.int)
-    #
-    # x_min, x_max, y_min, y_max = get_panorama_corners_coordinates(ims, Hs)
-    # if (y_min == min_y and y_max == max_y):
-    #     print('OK')
-    # else:
-    #     print('fuck')
+
+    if (max_y - min_y + 1) % 8 != 0:
+        residual = (max_y - min_y + 1) % 8
+        min_y += np.floor(residual / 2).astype(np.int)
+        max_y -= np.ceil(residual / 2).astype(np.int)
 
     panorama = np.zeros((max_y - min_y + 1, max_x - min_x + 1), dtype=np.float32)
 
@@ -272,6 +283,7 @@ def render_panorama_blending(ims, Hs):
     y_vec = np.arange(min_y, max_y + 1)
 
     blending_ims = []
+
     for i in range(len(ims)):
         prev_strip = next_strip.astype(np.int)
         if i != len(ims) - 1:
@@ -296,14 +308,13 @@ def render_panorama_blending(ims, Hs):
             mask = np.column_stack((
                 np.ones(shape=(strip.shape[0], -prev_strip_diff)),
                 np.zeros(shape=(strip.shape[0], -prev_strip_diff))))
-            blend_im = sol4_utils.pyramid_blending(blending_ims[0], blending_ims[1], mask, 5, 9, 7)
+            blend_im = sol4_utils.pyramid_blending(blending_ims[0], blending_ims[1], mask, 4, 7, 7)
             panorama[:, prev_strip - min_x + prev_strip_diff: prev_strip - min_x - prev_strip_diff] = \
                 blend_im
             del blending_ims[1]
             del blending_ims[0]
 
-        # multiply by two since we make the strip bigger, and we want to skip part of the panorama
+    # multiply by two since we make the strip bigger, and we want to skip part of the panorama
         panorama[:, prev_strip - min_x - prev_strip_diff: next_strip - min_x - next_strip_diff] = \
             strip[:, -(prev_strip_diff * 2): strip.shape[1] - (next_strip_diff * 2)]
     return panorama
-
