@@ -10,11 +10,9 @@ from sol4_utils import *
 
 IM_NAME = 'backyard2.jpg'
 # IM_NAME = 'backyard1.jpg'
-MATCHING_IMAGES = ['backyard1.jpg', 'backyard2.jpg']#, 'backyard3.jpg']
-
-
+# MATCHING_IMAGES = ['backyard1.jpg', 'backyard2.jpg', 'backyard3.jpg']
 # MATCHING_IMAGES = ['oxford1.jpg', 'oxford2.jpg']
-# MATCHING_IMAGES = ['office1.jpg', 'office2.jpg', 'office3.jpg', 'office4.jpg']
+MATCHING_IMAGES = ['office1.jpg', 'office2.jpg', 'office3.jpg', 'office4.jpg']
 
 
 def get_images():
@@ -295,10 +293,15 @@ def test_render_panorama():
             mySol.ransac_homography(np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), 10000, 6)[0])
 
     Hs = mySol.accumulate_homographies(H_successive, (len(ims) - 1) // 2)
-    panorma = mySol.render_panorama(ims, Hs)
+    # panorma = mySol.render_panorama(ims, Hs)
+    # plt.imshow(panorma, plt.cm.gray)
+    # plt.imshow(panorma)
+    # plt.show()
+    panorma = mySol.render_panorama_blending(ims, Hs)
     plt.imshow(panorma, plt.cm.gray)
     # plt.imshow(panorma)
     plt.show()
+
 
 
 # test_harris_corner_detector()
@@ -306,7 +309,7 @@ def test_render_panorama():
 # test_transform_coordinates_level()
 # test_descriptor_score()
 # test_descriptor_score2()
-test_match_features()
+# test_match_features()
 # test_apply_homography()
 # test_ransac_homography()
 # test_accumulate_homographies_3()
@@ -316,7 +319,7 @@ test_match_features()
 import time
 
 t0 = time.time()
-# test_render_panorama()
+test_render_panorama()
 t1 = time.time()
 
 print(t1 - t0)

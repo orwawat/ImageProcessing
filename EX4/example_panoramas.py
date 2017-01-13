@@ -41,7 +41,7 @@ def generate_panorama(data_dir, file_prefix, num_images, figsize=(20,20)):
   ims_rgb = [sol4_utils.read_image(f,2) for f in files]
 
   # Render panorama for each color channel and combine them.
-  panorama = [sol4.render_panorama([im[...,i] for im in ims_rgb], Htot) for i in range(3)]
+  panorama = [sol4.render_panorama_blending([im[...,i] for im in ims_rgb], Htot) for i in range(3)]
   panorama = np.dstack(panorama)
 
   #plot the panorama
@@ -50,15 +50,15 @@ def generate_panorama(data_dir, file_prefix, num_images, figsize=(20,20)):
   plt.show()
 
 def main():
-  # generate_panorama('external/', 'office'  , 4)
+  generate_panorama('external/', 'office'  , 4)
   # generate_panorama('external/', 'oxford', 2)
 
-  import time
-  t0 = time.time()
-  generate_panorama('external/', 'backyard', 3, (20,10))
-  t1 = time.time()
-
-  print(t1 - t0)
+  # import time
+  # t0 = time.time()
+  # generate_panorama('external/', 'backyard', 3, (20,10))
+  # t1 = time.time()
+  #
+  # print(t1 - t0)
 
 
 if __name__ == '__main__':
