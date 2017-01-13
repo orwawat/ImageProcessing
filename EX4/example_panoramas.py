@@ -50,15 +50,16 @@ def generate_panorama(data_dir, file_prefix, num_images, figsize=(20,20)):
   plt.show()
 
 def main():
-  generate_panorama('external/', 'office'  , 4)
+  # generate_panorama('external/', 'office'  , 4)
   # generate_panorama('external/', 'oxford', 2)
 
-  # import time
-  # t0 = time.time()
+  import time
+  t0 = time.time()
   # generate_panorama('external/', 'backyard', 3, (20,10))
-  # t1 = time.time()
-  #
-  # print(t1 - t0)
+  generate_panorama('external/', 'office', 4)
+  t1 = time.time()
+
+  print(t1 - t0)
 
 
 if __name__ == '__main__':
