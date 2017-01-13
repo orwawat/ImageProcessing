@@ -7,9 +7,12 @@ import matplotlib.pyplot as plt
 import sol4 as mySol
 from sol4_add import *
 from sol4_utils import *
+
 IM_NAME = 'backyard2.jpg'
 # IM_NAME = 'backyard1.jpg'
-MATCHING_IMAGES = ['backyard1.jpg', 'backyard2.jpg', 'backyard3.jpg']
+MATCHING_IMAGES = ['backyard1.jpg', 'backyard2.jpg']#, 'backyard3.jpg']
+
+
 # MATCHING_IMAGES = ['oxford1.jpg', 'oxford2.jpg']
 # MATCHING_IMAGES = ['office1.jpg', 'office2.jpg', 'office3.jpg', 'office4.jpg']
 
@@ -27,10 +30,9 @@ def get_image():
 
 def get_specific_image(name):
     im = imread(".//external//" + name)
-    im_gray = color.rgb2gray(im)
-    im_gray = im_gray.astype(np.float32)
-    # plt.imshow(im_gray, plt.cm.gray)
-    # plt.show()
+    im = color.rgb2gray(im)
+    im_gray = im.astype(np.float32)
+    # plt.imshow(im_gray, plt.cm.gray)# plt.show()
     return im_gray.astype(np.float32)
 
 
@@ -143,7 +145,7 @@ def test_ransac_homography():
     pos1, desc_1 = mySol.find_features(build_gaussian_pyramid(im1, 3, 3)[0])
     pos2, desc_2 = mySol.find_features(build_gaussian_pyramid(im2, 3, 3)[0])
     match_ind1, match_ind2 = mySol.match_features(desc_1, desc_2, min_score)
-    H12, inliners = mySol.ransac_homography(np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), 1000, 3)
+    H12, inliners = mySol.ransac_homography(np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), 10000, 6)
     mySol.display_matches(im1, im2, np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), inliners)
     # mySol.display_matches(im1, im2, pos1, pos2, inliners)
     if (type(inliners) != np.ndarray):
@@ -152,6 +154,17 @@ def test_ransac_homography():
         print('XXXXXX Wrong shape')
     else:
         print('OK')
+
+
+def test_get_highest_indices():
+    arr1 = np.array([0.5,None,0.99,0.99])
+    print(arr1[mySol.get_highest_indices(arr1)])
+
+
+def test_match_features1():
+    arr1 = []
+    arr2 = []
+    mySol.match_features(arr1, arr2, 0.5)
 
 
 def test_match_features():
@@ -279,12 +292,13 @@ def test_render_panorama():
         pos2, desc_2 = mySol.find_features(build_gaussian_pyramid(ims[i + 1], 3, 3)[0])
         match_ind1, match_ind2 = mySol.match_features(desc_1, desc_2, min_score)
         H_successive.append(
-            mySol.ransac_homography(np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), 1000, 3)[0])
+            mySol.ransac_homography(np.take(pos1, match_ind1, 0), np.take(pos2, match_ind2, 0), 10000, 6)[0])
 
-    Hs = mySol.accumulate_homographies(H_successive, len(ims) // 2)
+    Hs = mySol.accumulate_homographies(H_successive, (len(ims) - 1) // 2)
     panorma = mySol.render_panorama(ims, Hs)
     plt.imshow(panorma, plt.cm.gray)
-    # plt.show()
+    # plt.imshow(panorma)
+    plt.show()
 
 
 # test_harris_corner_detector()
@@ -292,12 +306,20 @@ def test_render_panorama():
 # test_transform_coordinates_level()
 # test_descriptor_score()
 # test_descriptor_score2()
-# test_match_features()
+test_match_features()
 # test_apply_homography()
 # test_ransac_homography()
 # test_accumulate_homographies_3()
 # test_accumulate_homographies_0()
+# test_get_highest_indices()
+
+import time
+
+t0 = time.time()
 # test_render_panorama()
+t1 = time.time()
+
+print(t1 - t0)
 
 # twod = np.array([[0,0], [1,1], [2,2], [3,3]])
 # a = np.array([twod, twod])
@@ -306,6 +328,6 @@ def test_render_panorama():
 # print(b)
 # print(a)
 
-print(timeit("test_render_panorama()", setup='from __main__ import test_render_panorama',number = 100))
+# print(timeit("test_render_panorama()", setup='from __main__ import test_render_panorama',number = 100))
 # print(timeit("np.empty(shape=(1000,10))", setup='import numpy as np', number=1000))
 # print(timeit("[None] * 1000", number=1000))

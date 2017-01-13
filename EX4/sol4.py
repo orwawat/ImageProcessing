@@ -9,8 +9,6 @@ import matplotlib.pyplot as plt
 
 def get_dervative(im):
     kernel = np.array([[1, 0, -1]])
-    # dx = ndimage.filters.convolve(im, kernel, mode='constant')
-    # dy = ndimage.filters.convolve(im, kernel.T, mode='constant')
     dx = convolve2d(im, kernel, mode='same')
     dy = convolve2d(im, kernel.T, mode='same')
     return dx, dy
@@ -42,8 +40,8 @@ def sample_descriptor(im, pos, desc_rad):
     for i in range(pos.shape[0]):
         x_pos = np.arange(pos[i, 0] - desc_rad, pos[i, 0] + desc_rad + 1, step=1)
         y_pos = np.arange(pos[i, 1] - desc_rad, pos[i, 1] + desc_rad + 1, step=1)
-        poss = np.dstack(np.meshgrid(y_pos, x_pos)).reshape(-1, 2)
-        patch = ndimage.map_coordinates(im, (poss[:, 0], poss[:, 1]), order=1, prefilter=False)
+        poss = np.meshgrid(y_pos, x_pos)
+        patch = ndimage.map_coordinates(im, (poss[0].flatten(), poss[1].flatten()), order=1, prefilter=False)
         normalized_patch = patch - np.mean(patch)
         norm = np.linalg.norm(normalized_patch)
         if (norm != 0):
@@ -54,7 +52,7 @@ def sample_descriptor(im, pos, desc_rad):
     return desc
 
 
-def find_features(pyr):
+def find_features1(pyr):
     # TODO: From where do we get m,n,radius, descriptor radius
     desc_rad = 3
     pos_l0 = sol4_add.spread_out_corners(pyr[0], 7, 7, 12)
@@ -90,11 +88,14 @@ def get_highest_indices(arr):
 
 def match_features(desc1, desc2, min_score):
     S = calc_descriptor_score(desc1, desc2)
+    # S = np.array([[0.99, 0.99, 0.5], [0.99, 0.5, 0.7], [0.5,0.99,0.3]])
+    # print(S)
     match_ind1 = np.empty(shape=(0,), dtype=int)
     match_ind2 = np.empty(shape=(0,), dtype=int)
 
     # TODO: Get rid of the loop
-    for i in range(desc1.shape[2]):
+    # for i in range(desc1.shape[2]):
+    for i  in range(3):
         # get the top two indices from image 2 that match i (i is an index from image 1)
         k_matchs = get_highest_indices(S[i, :])
         # Check if i is one of the top two indices of the first index
@@ -108,6 +109,8 @@ def match_features(desc1, desc2, min_score):
             match_ind1 = np.append(match_ind1, i)
             match_ind2 = np.append(match_ind2, k_matchs[1])
 
+    # print(match_ind1)
+    # print(match_ind2)
     return match_ind1, match_ind2
 
 
@@ -118,8 +121,8 @@ def apply_homography(pos1, H12):
     pos2_homograph = np.empty(shape=pos1.shape)
     for j in range(pos1.shape[0]):
         pos2_homograph[j, :] = np.dot(H12, pos1[j, :])
-        # if pos2_homograph[j, 2] == 0:
-        #     pos2_homograph[j, 2] = np.inf
+        if pos2_homograph[j, 2] == 0:
+            pos2_homograph[j, 2] = -np.inf
 
     pos2 = np.column_stack((pos2_homograph[:, 0] / pos2_homograph[:, 2], pos2_homograph[:, 1] / pos2_homograph[:, 2]))
     return pos2
@@ -160,50 +163,38 @@ def display_matches(im1, im2, pos1, pos2, inliers):
     plt.imshow(im, plt.cm.gray)
 
     inliers_points = [points_from_ind(pos1, inliers), points_from_ind(pos2, inliers)]
+    # print(inliers_points)
+    # print('\n\n\n')
     plt.plot([inliers_points[0][:, 0], inliers_points[1][:, 0] + shift_amount],
              [inliers_points[0][:, 1], inliers_points[1][:, 1]], mfc='r', c='y', lw=.4, ms=10, marker='o')
 
+
+
     outlier_indices = np.delete(np.arange(start=0, stop=len(pos1)), inliers)
     outlier_points = [points_from_ind(pos1, outlier_indices), points_from_ind(pos2, outlier_indices)]
-    plt.plot([outlier_points[0][:, 0], outlier_points[1][:, 0] + shift_amount],
-             [outlier_points[0][:, 1], outlier_points[1][:, 1]], mfc='r', c='b', lw=.4, ms=10, marker='o')
-
-    # TODO: DELETE
-    # for i in range(len(pos1)):
-    #     x = [pos1[i, 0], pos2[i, 0] + shift_amount]
-    #     y = [pos1[i, 1], pos2[i, 1]]
-    #     if i in inliers:
-    #         plt.plot(x, y, mfc='r', c='y', lw=.4, ms=10, marker='o')
-    #     else:
-    #         plt.plot(x, y, mfc='r', c='b', lw=.4, ms=10, marker='o')
-
+    # plt.plot([outlier_points[0][:, 0], outlier_points[1][:, 0] + shift_amount],
+    #          [outlier_points[0][:, 1], outlier_points[1][:, 1]], mfc='r', c='b', lw=.4, ms=10, marker='o')
     plt.show()
 
 
 def normalize_homohraphie_matrix(matrix):
-    if (matrix[2, 2] == 0):
-        matrix[2, 2] == np.inf
+    # if (matrix[2, 2] == 0):
+    #     matrix[2, 2] == np.inf
     matrix /= matrix[2, 2]
     return matrix
 
 
-def accumulate_homographies(H_successive, m):
+def accumulate_homographies1(H_successive, m):
     H2m = [None] * (len(H_successive) + 1)
     H2m[m] = np.eye(3)
 
-    if (m + 1 < len(H_successive) + 1):
-        H2m[m + 1] = np.linalg.inv(H_successive[m])
-        H2m[m + 1] = normalize_homohraphie_matrix(H2m[m + 1])
-    if (m - 1 >= 0):
-        H2m[m - 1] = H_successive[m - 1]
-
     # TODO: Check if it's faster with recursive / one for loop
-    for i in range(m - 2, -1, -1):
-        H2m[i] = H2m[i + 1] * H_successive[i]
+    for i in range(m - 1, -1, -1):
+        H2m[i] = np.dot(H2m[i + 1], H_successive[i])
         H2m[i] = normalize_homohraphie_matrix(H2m[i])
 
-    for i in range(m + 2, len(H_successive) + 1):
-        H2m[i] = H2m[i - 1] * np.linalg.inv(H_successive[i - 1])
+    for i in range(m + 1, len(H_successive) + 1):
+        H2m[i] = np.dot(H2m[i - 1],  np.linalg.inv(H_successive[i - 1]))
         H2m[i] = normalize_homohraphie_matrix(H2m[i])
 
     return H2m
@@ -226,10 +217,10 @@ def calc_centers_and_corners(ims, Hs):
 
 def render_panorama(ims, Hs):
     centers, corners = calc_centers_and_corners(ims, Hs)
-    max_x = np.amax(corners[:, :, 0]).astype(np.int)
-    min_x = np.amin(corners[:, :, 0]).astype(np.int)
-    max_y = np.amax(corners[:, :, 1]).astype(np.int)
-    min_y = np.amin(corners[:, :, 1]).astype(np.int)
+    max_x = np.max(corners[:, :, 0]).astype(np.int)
+    min_x = np.min(corners[:, :, 0]).astype(np.int)
+    max_y = np.max(corners[:, :, 1]).astype(np.int)
+    min_y = np.min(corners[:, :, 1]).astype(np.int)
 
     panorama = np.zeros((max_y - min_y + 1, max_x - min_x + 1), dtype=np.float32)
 
@@ -253,3 +244,5 @@ def render_panorama(ims, Hs):
         panorama[0: max_y - min_y, prev_strip - min_x: next_strip - min_x] = strip
 
     return panorama
+
+
