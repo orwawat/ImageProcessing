@@ -12,8 +12,8 @@ IM_NAME = 'backyard2.jpg'
 # IM_NAME = 'backyard1.jpg'
 # MATCHING_IMAGES = ['backyard1.jpg', 'backyard2.jpg', 'backyard3.jpg']
 # MATCHING_IMAGES = ['oxford1.jpg', 'oxford2.jpg']
-MATCHING_IMAGES = ['office1.jpg', 'office2.jpg', 'office3.jpg', 'office4.jpg']
-
+# MATCHING_IMAGES = ['office1.jpg', 'office2.jpg', 'office3.jpg', 'office4.jpg']
+MATCHING_IMAGES = ['haaretz1.jpg', 'haaretz2.jpg', 'haaretz3.jpg']
 
 def get_images():
     res = []
