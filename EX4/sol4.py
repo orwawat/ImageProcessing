@@ -110,14 +110,8 @@ def apply_homography(pos1, H12):
     pos2_homograph = np.dot(pos1, H12.T)
     zeroIndcies = np.where(pos2_homograph[:, 2] == 0)[0]
     if (len(zeroIndcies) > 0):
-        pos2_homograph[zeroIndcies, 0] = np.inf
-        pos2_homograph[zeroIndcies, 1] = np.inf
-
-    # pos2_homograph = np.empty(shape=pos1.shape)
-    # for j in range(pos1.shape[0]):
-    #     pos2_homograph[j, :] = np.dot(H12, pos1[j, :])
-    #     if pos2_homograph[j, 2] == 0:
-    #         pos2_homograph[j, 2] = -np.inf
+        pos2_homograph[zeroIndcies, 0] = -np.inf
+        pos2_homograph[zeroIndcies, 1] = -np.inf
 
     pos2 = np.column_stack((pos2_homograph[:, 0] / pos2_homograph[:, 2], pos2_homograph[:, 1] / pos2_homograph[:, 2]))
     return pos2
@@ -241,7 +235,7 @@ def render_panorama_no_blending(ims, Hs):
 
 
 def get_blending_strip_diff(index, num_images):
-    blending_size = 64
+    blending_size = 32
 
     if index == 0:
         return 0, blending_size
@@ -278,6 +272,7 @@ def render_panorama(ims, Hs):
             next_strip = max_x.astype(np.int)
 
         prev_strip_diff, next_strip_diff = get_blending_strip_diff(i, len(ims))
+
         m_grid = np.meshgrid(np.arange(prev_strip + prev_strip_diff, next_strip + next_strip_diff), y_vec)
         m_coord = np.column_stack((m_grid[0].flatten(), m_grid[1].flatten()))
         i_points = apply_homography(m_coord, np.linalg.inv(Hs[i]))
@@ -294,7 +289,7 @@ def render_panorama(ims, Hs):
             mask = np.column_stack((
                 np.ones(shape=(strip.shape[0], -prev_strip_diff)),
                 np.zeros(shape=(strip.shape[0], -prev_strip_diff))))
-            blend_im = sol4_utils.pyramid_blending(blending_ims[0], blending_ims[1], mask, 4, 7, 7)
+            blend_im = sol4_utils.pyramid_blending(blending_ims[0], blending_ims[1], mask, 3, 9, 9)
             panorama[:, prev_strip - min_x + prev_strip_diff: prev_strip - min_x - prev_strip_diff] = \
                 blend_im
             del blending_ims[1]

@@ -53,9 +53,12 @@ def generate_panorama(data_dir, file_prefix, figsize=(20, 20)):
 
 def main():
     dir = 'external/'
-    images_name = 'stuff'
+    images_name = 'nachlaot'
     panorama = generate_panorama(dir, images_name)
-    imsave(os.path.join(os.getcwd(), dir, images_name + '.jpg'), panorama)
+    imsave(os.path.join(os.getcwd(), dir, images_name + '.jpg'), panorama.clip(0, 1))
+    # plt.imshow(panorama.clip(0,1))
+    # plt.show()
+
 
 if __name__ == '__main__':
     main()
