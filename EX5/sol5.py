@@ -1,6 +1,8 @@
 import numpy as np
 from skimage import color
 from scipy.misc import imread
+from keras.layers import Input , Dense, Convolution2D, Activation
+from keras.models import Model
 from scipy import ndimage
 from scipy.signal import convolve2d
 import matplotlib.pyplot as plt
@@ -29,17 +31,19 @@ def read_image(filename, representation):
 
     return returnImage  # .astype(np.float32)
 
+
 def calculate_crop_start_location(im_shape, crop_size):
     width_start = np.random.randint(im_shape[0] - crop_size[0], size=1)
     height_start = np.random.randint(im_shape[1] - crop_size[1], size=1)
     return width_start, height_start
 
+
 def get_patch(im, start_location, crop_size):
     return im[start_location[0]: start_location[0] + crop_size[0], \
            start_location[1] : start_location[1] + crop_size[1]]
 
+image_cache = {}
 def load_dataset(filenames, batch_size, corruption_func, crop_size):
-    image_cache = {}
     while True:
         source_batch = np.empty(shape=(batch_size,))
         target_batch = np.empty(shape=(batch_size,))
@@ -60,5 +64,11 @@ def load_dataset(filenames, batch_size, corruption_func, crop_size):
 
 
 
+def resblock(input_tensor, num_channels):
+    output_tensor = Convolution2D(16, 3, 3, border_mode='same')(input_tensor)
+    output_tensor = Activation('relu ')(output_tensor)
+    output_tensor = Convolution2D(16, 3, 3, border_mode='same')(output_tensor)
+    return output_tensor
 
-
+def build_nn_model(height, width, num_channels)
+    return model
