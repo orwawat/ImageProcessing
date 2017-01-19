@@ -28,12 +28,12 @@ def read_image(filename, representation):
         else:
             # Convert to gray scale
             im_gray = color.rgb2gray(im_float)
-            im_gray = im_gray  # .astype(np.float32)
+            im_gray = im_gray
             returnImage = im_gray
     else:
         returnImage = im_float
 
-    return returnImage  # .astype(np.float32)
+    return returnImage.astype(np.float32)
 
 
 def calculate_crop_start_location(im_shape, crop_size):
@@ -51,8 +51,8 @@ image_cache = {}
 
 def load_dataset(filenames, batch_size, corruption_func, crop_size):
     while True:
-        source_batch = np.empty(shape=(batch_size,1,crop_size[0], crop_size[1]))
-        target_batch = np.empty(shape=(batch_size,1,crop_size[0], crop_size[1]))
+        source_batch = np.empty(shape=(batch_size,1,crop_size[0], crop_size[1]), dtype=np.float32)
+        target_batch = np.empty(shape=(batch_size,1,crop_size[0], crop_size[1]), dtype=np.float32)
         for i in range(batch_size):
             im = None
             fileName = np.random.choice(filenames)
