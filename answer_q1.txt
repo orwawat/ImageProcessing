@@ -1,0 +1,6 @@
+First we describe the corruption_function, we can use something simaler to pyramids.
+when building a gaussian pyramid in each level we loose resolution, we also
+lose some pixels but we can solve that with zero padding and blurring.
+So for the corruption_function we will blur, switch every second/third/fourth pixel
+with a zero, and blur again in this way we will get the same image but with a bad
+resolution.
